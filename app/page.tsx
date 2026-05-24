@@ -47,7 +47,7 @@ export default function DashboardPage() {
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Модули проверки
               </h3>
-              <span className="text-[10px] text-muted-foreground font-mono">8 модулей · 312 объектов</span>
+              <span className="text-[10px] text-muted-foreground font-mono">10 модулей · 312 объектов</span>
             </div>
             <CheckModulesGrid />
           </section>

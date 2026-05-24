@@ -779,7 +779,7 @@ export const opoObjects: OpoObject[] = [
   },
   {
     id: "opo5",
-    name: "ФУ-3 (Факельная установка)",
+    name: "ФУ-3 (Факельная установ��а)",
     opoClass: "I",
     company: "АО «СеверДобыча»",
     field: "Арктическое",
@@ -1213,7 +1213,7 @@ export const reportingObligations: ReportingObligation[] = [
     deadline: "01.02.2026",
     submittedDate: "31.01.2026",
     status: "warning",
-    discrepancy: "Фонд бездействующих скважин расходится с данными ИС ИПР на 3 единицы",
+    discrepancy: "Фонд бездейству��щих скважин расходится с данными ИС ИПР на 3 единицы",
     comment: "Отчёт в срок, выявлены расхождения с системой ИПР по бездействующему фонду.",
   },
   {
@@ -1486,7 +1486,7 @@ export const masterfileWells: MasterfileWell[] = [
     id: "pw1", wellName: "18Б-1", dataType: "plan", wellStatus: "producing", wellStatusLabel: "Плановый запуск",
     wellType: "production", wellTypeLabel: "Добывающая",
     clusterId: "pmc1", clusterName: "Куст 18Б", fieldId: "mf1", fieldName: "Западно-Сибирское",
-    company: "ООО «НефтьГаз-Запад»", launchDate: "",
+    company: "ООО «НефтьГаз-Запад��", launchDate: "",
     plannedLaunchDate: "01.09.2026", plannedOilRate: 52.0, plannedOilYear: 8.2,
     oilCumTst: 0, oilRateToday: null, lastMeasured: "",
     docCoverage: { spatial: false, tsr: true, land: false, opo: false, ker: false, conservation: true, license: true, reporting: false, hydro: false },
@@ -2033,6 +2033,8 @@ export const checkModules: CheckModule[] = [
   { id: "6", code: "КОНС", title: "Консервация и ликвидация скважин", critical: 2, warning: 6, ok: 304, lastChecked: "23.05.2026 08:00" },
   { id: "7", code: "ЛИЦ", title: "Лицензирование недропользования", critical: 2, warning: 3, ok: 307, lastChecked: "21.05.2026 12:00" },
   { id: "8", code: "ОТЧЁТ", title: "Регламентная отчётность", critical: 2, warning: 2, ok: 308, lastChecked: "23.05.2026 08:00" },
+  { id: "9", code: "ГИДРО", title: "Гидрогеология и водопользование", critical: 4, warning: 3, ok: 305, lastChecked: "22.05.2026 18:00" },
+  { id: "10", code: "ЗАПУСК", title: "Запуск новых объектов (дорожные карты)", critical: 3, warning: 2, ok: 0, lastChecked: "23.05.2026 08:00" },
 ]
 
 export const recentAlerts = [
@@ -2426,3 +2428,133 @@ export const fieldWaterSeries: FieldWaterSeries[] = [
     ],
   },
 ]
+
+// ──────────────────────────────────────────────────────────────────────────────
+// GANTT CHART TYPES AND BUILDER
+// For new plan clusters: converts RoadmapItem[] to Gantt rows relative to today
+// ──────────────────────────────────────────────────────────────────────────────
+
+export interface GanttStep {
+  label: string
+  department: string
+  /** Calendar days from object start offset */
+  startOffset: number
+  durationDays: number
+  status: "ok" | "warn" | "critical"
+}
+
+export interface GanttRow {
+  id: string
+  /** e.g. "Куст 18Б — Западно-Сибирское" */
+  objectLabel: string
+  company: string
+  fieldName: string
+  /** The doc-package module code (e.g. "tsr") */
+  module: RoadmapModule
+  moduleTitle: string
+  moduleColor: string
+  /** Day offset from the gantt start date (today = 0) */
+  startOffset: number
+  totalCalendarDays: number
+  /** ISO date string of the planned launch/completion deadline */
+  plannedLaunchDate: string
+  /** Days from today until planned launch */
+  daysUntilLaunch: number
+  deadlineStatus: "ok" | "warn" | "critical"
+  steps: GanttStep[]
+}
+
+const MODULE_COLOR_HEX: Record<string, string> = {
+  spatial:      "#2563eb",
+  tsr:          "#0891b2",
+  land:         "#16a34a",
+  opo:          "#dc2626",
+  ker:          "#65a30d",
+  conservation: "#9333ea",
+  license:      "#ea580c",
+  reporting:    "#6366f1",
+  hydro:        "#0284c7",
+}
+
+/**
+ * Converts a RoadmapItem[] (from buildRoadmapForCluster/Well) into GanttRow[].
+ * @param id          Unique row id prefix
+ * @param objectLabel Human-readable label ("Куст 18Б — Западно-Сибирское")
+ * @param company     Company name
+ * @param fieldName   Field name
+ * @param roadmap     Result of buildRoadmapForCluster / buildRoadmapForWell
+ * @param launchDateStr  "DD.MM.YYYY" planned launch date
+ */
+export function buildGanttRows(
+  id: string,
+  objectLabel: string,
+  company: string,
+  fieldName: string,
+  roadmap: RoadmapItem[],
+  launchDateStr: string,
+): GanttRow[] {
+  const today = new Date(2026, 4, 23) // 23.05.2026 (matches mock "today")
+  const launchParts = launchDateStr.split(".")
+  const launchDate = new Date(
+    Number(launchParts[2]),
+    Number(launchParts[1]) - 1,
+    Number(launchParts[0])
+  )
+  const daysUntilLaunch = Math.round((launchDate.getTime() - today.getTime()) / 86400000)
+
+  return roadmap.map((item, idx) => {
+    // Sequential steps — accumulate start offsets
+    let cursor = 0
+    const steps: GanttStep[] = item.steps.map((step) => {
+      const gs: GanttStep = {
+        label: step.action,
+        department: step.department,
+        startOffset: cursor,
+        durationDays: step.daysToComplete,
+        status: item.deadlineStatus === "critical" ? "critical"
+              : item.deadlineStatus === "warn" ? "warn"
+              : "ok",
+      }
+      cursor += step.daysToComplete
+      return gs
+    })
+
+    const status: GanttRow["deadlineStatus"] =
+      item.deadlineStatus === "critical" ? "critical"
+      : item.deadlineStatus === "warn" ? "warn"
+      : "ok"
+
+    return {
+      id: `${id}-${idx}`,
+      objectLabel,
+      company,
+      fieldName,
+      module: item.module,
+      moduleTitle: item.moduleTitle,
+      moduleColor: MODULE_COLOR_HEX[item.module] ?? "#6b7280",
+      startOffset: 0,
+      totalCalendarDays: item.totalDays,
+      plannedLaunchDate: launchDateStr,
+      daysUntilLaunch,
+      deadlineStatus: status,
+      steps,
+    }
+  })
+}
+
+/**
+ * Builds the full set of Gantt rows for all plan clusters that have missing documents.
+ */
+export function buildAllLaunchGanttRows(): GanttRow[] {
+  const planClusters = masterfileClusters.filter((c) => c.dataType === "plan")
+  const rows: GanttRow[] = []
+  for (const cluster of planClusters) {
+    const roadmap = buildRoadmapForCluster(cluster)
+    if (roadmap.length === 0) continue
+    const label = `${cluster.clusterName} — ${cluster.fieldName}`
+    const launchDate = cluster.plannedLaunchDate ?? ""
+    const newRows = buildGanttRows(cluster.id, label, cluster.company, cluster.fieldName, roadmap, launchDate)
+    rows.push(...newRows)
+  }
+  return rows
+}
