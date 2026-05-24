@@ -178,16 +178,16 @@ function WaterChart({ series }: { series: FieldWaterSeries }) {
           </p>
           <ResponsiveContainer width="100%" height={160}>
             <ComposedChart data={data} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.3_0_0/0.12)" />
-              <XAxis dataKey="month" tick={{ fontSize: 10, fill: "oklch(0.65_0_0)" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: "oklch(0.65_0_0)" }} axisLine={false} tickLine={false} width={38} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(120,120,120,0.15)" />
+              <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#888" }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 10, fill: "#888" }} axisLine={false} tickLine={false} width={38} />
               <Tooltip
                 contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: 11 }}
                 formatter={(v: number) => [`${v.toFixed(0)} тыс.м³`]}
               />
-              <Line type="monotone" dataKey="injectionPlan" name="План ТСР" stroke="oklch(0.65_0.15_210)" strokeDasharray="5 3" strokeWidth={1.5} dot={false} />
-              <Area type="monotone" dataKey="injectionForecast" name="Прогноз" stroke="oklch(0.72_0.18_70)" fill="oklch(0.72_0.18_70/0.08)" strokeDasharray="4 3" strokeWidth={1.5} dot={false} connectNulls={false} />
-              <Bar dataKey="injectionFact" name="Закачка факт" fill="oklch(0.55_0.18_220/0.7)" radius={[2, 2, 0, 0]} maxBarSize={22} />
+              <Line type="monotone" dataKey="injectionPlan" name="План ТСР" stroke="#4c8fbf" strokeDasharray="5 3" strokeWidth={1.5} dot={false} />
+              <Area type="monotone" dataKey="injectionForecast" name="Прогноз" stroke="#c8a040" fill="#c8a04018" strokeDasharray="4 3" strokeWidth={1.5} dot={false} connectNulls={false} />
+              <Bar dataKey="injectionFact" name="Закачка факт" fill="#4c8fbf" fillOpacity={0.75} radius={[2, 2, 0, 0]} maxBarSize={22} />
             </ComposedChart>
           </ResponsiveContainer>
         </div>
@@ -199,16 +199,16 @@ function WaterChart({ series }: { series: FieldWaterSeries }) {
           </p>
           <ResponsiveContainer width="100%" height={160}>
             <ComposedChart data={data} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.3_0_0/0.12)" />
-              <XAxis dataKey="month" tick={{ fontSize: 10, fill: "oklch(0.65_0_0)" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: "oklch(0.65_0_0)" }} axisLine={false} tickLine={false} width={38} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(120,120,120,0.15)" />
+              <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#888" }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 10, fill: "#888" }} axisLine={false} tickLine={false} width={38} />
               <Tooltip
                 contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: 11 }}
                 formatter={(v: number) => [`${v.toFixed(0)} тыс.м³`]}
               />
-              <ReferenceLine y={data[0].disposalLimit} stroke="oklch(0.52_0.22_25/0.5)" strokeDasharray="3 4" strokeWidth={1.5} label={{ value: "Предел ПРВ", fontSize: 9, fill: "oklch(0.72_0.18_25)" }} />
-              <Area type="monotone" dataKey="disposalForecast" name="Прогноз" stroke="oklch(0.72_0.18_70)" fill="oklch(0.72_0.18_70/0.08)" strokeDasharray="4 3" strokeWidth={1.5} dot={false} connectNulls={false} />
-              <Bar dataKey="disposalFact" name="Захоронение факт" fill="oklch(0.55_0.18_220/0.7)" radius={[2, 2, 0, 0]} maxBarSize={22} />
+              <ReferenceLine y={data[0].disposalLimit} stroke="#e05a3a" strokeOpacity={0.6} strokeDasharray="3 4" strokeWidth={1.5} label={{ value: "Предел ПРВ", fontSize: 9, fill: "#e05a3a" }} />
+              <Area type="monotone" dataKey="disposalForecast" name="Прогноз" stroke="#c8a040" fill="#c8a04018" strokeDasharray="4 3" strokeWidth={1.5} dot={false} connectNulls={false} />
+              <Bar dataKey="disposalFact" name="Захоронение факт" fill="#4c8fbf" fillOpacity={0.75} radius={[2, 2, 0, 0]} maxBarSize={22} />
             </ComposedChart>
           </ResponsiveContainer>
         </div>

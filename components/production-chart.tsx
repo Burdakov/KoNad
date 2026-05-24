@@ -121,23 +121,23 @@ function MetricChart({
 
   const alertStatus = getDeviationStatus(avgFact, avgPlan, tolerancePct, direction)
   const alertColor  =
-    alertStatus === "critical" ? "oklch(0.52_0.22_25)" :
-    alertStatus === "warning"  ? "oklch(0.72_0.18_70)" : "oklch(0.62_0.18_145)"
+    alertStatus === "critical" ? "#e05a3a" :
+    alertStatus === "warning"  ? "#d4a03a" : "#4caf7a"
 
   return (
     <div>
       <ResponsiveContainer width="100%" height={180}>
         <ComposedChart data={data} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.3_0_0/0.15)" />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(120,120,120,0.15)" />
           <XAxis
             dataKey="month"
-            tick={{ fontSize: 10, fill: "oklch(0.65_0_0)" }}
+            tick={{ fontSize: 10, fill: "#888" }}
             axisLine={false}
             tickLine={false}
           />
           <YAxis
             domain={[yMin, yMax]}
-            tick={{ fontSize: 10, fill: "oklch(0.65_0_0)" }}
+            tick={{ fontSize: 10, fill: "#888" }}
             axisLine={false}
             tickLine={false}
             width={42}
@@ -150,7 +150,7 @@ function MetricChart({
             type="monotone"
             dataKey="plan"
             name={planKey}
-            stroke="oklch(0.65_0.15_210)"
+            stroke="#4c8fbf"
             strokeDasharray="6 3"
             strokeWidth={1.5}
             dot={false}
@@ -162,8 +162,8 @@ function MetricChart({
             type="monotone"
             dataKey="forecast"
             name={foreKey}
-            stroke="oklch(0.72_0.18_70)"
-            fill="oklch(0.72_0.18_70/0.08)"
+            stroke="#c8a040"
+            fill="#c8a04018"
             strokeDasharray="4 3"
             strokeWidth={1.5}
             dot={false}
@@ -174,7 +174,8 @@ function MetricChart({
           <Bar
             dataKey="fact"
             name={factKey}
-            fill={alertColor + "/0.75"}
+            fill={alertColor}
+            fillOpacity={0.85}
             radius={[2, 2, 0, 0]}
             maxBarSize={24}
           />
@@ -182,33 +183,35 @@ function MetricChart({
           {/* Tolerance band reference lines */}
           <ReferenceLine
             y={avgPlan * (1 + tolerancePct / 100)}
-            stroke="oklch(0.52_0.22_25/0.4)"
+            stroke="#e05a3a"
             strokeDasharray="2 4"
             strokeWidth={1}
+            strokeOpacity={0.5}
           />
           <ReferenceLine
             y={avgPlan * (1 - tolerancePct / 100)}
-            stroke="oklch(0.52_0.22_25/0.4)"
+            stroke="#e05a3a"
             strokeDasharray="2 4"
             strokeWidth={1}
+            strokeOpacity={0.5}
           />
         </ComposedChart>
       </ResponsiveContainer>
       <div className="flex items-center gap-4 mt-1 text-[10px] text-muted-foreground flex-wrap px-1">
         <span className="flex items-center gap-1.5">
-          <span className="inline-block w-4 h-2 rounded-sm" style={{ background: alertColor + "" }} />
+          <span className="inline-block w-4 h-2 rounded-sm" style={{ background: alertColor }} />
           {factKey}
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block w-4 h-0.5 rounded-sm bg-[oklch(0.65_0.15_210)]" style={{ borderTop: "2px dashed oklch(0.65 0.15 210)" }} />
+          <span className="inline-block w-4 h-px rounded-sm" style={{ background: "#4c8fbf", borderTop: "2px dashed #4c8fbf" }} />
           {planKey}
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block w-4 h-0.5 rounded-sm bg-[oklch(0.72_0.18_70)]" style={{ borderTop: "2px dashed oklch(0.72 0.18 70)" }} />
+          <span className="inline-block w-4 h-px rounded-sm" style={{ background: "#c8a040", borderTop: "2px dashed #c8a040" }} />
           {foreKey}
         </span>
-        <span className="flex items-center gap-1.5 text-muted-foreground/60">
-          <span className="inline-block w-4 h-0.5 rounded-sm bg-[oklch(0.52_0.22_25/0.4)]" />
+        <span className="flex items-center gap-1.5 opacity-60">
+          <span className="inline-block w-4 h-px" style={{ background: "#e05a3a" }} />
           Допуск ±{tolerancePct}%
         </span>
       </div>
