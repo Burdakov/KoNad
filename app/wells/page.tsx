@@ -2,9 +2,10 @@
 
 import { AppShell } from "@/components/app-shell"
 import { StatusBadge, StatusDot } from "@/components/status-badge"
+import { MasterfileCrossCheck } from "@/components/masterfile-cross-check"
 import { wellConservations, type WellConservation } from "@/lib/mock-data"
 import { useState } from "react"
-import { Drill, CircleDot, AlertTriangle } from "lucide-react"
+import { Drill, CircleDot, AlertTriangle, Database } from "lucide-react"
 
 const statusColors: Record<WellConservation["status"], string> = {
   active: "bg-[oklch(0.62_0.18_145/0.12)] text-[oklch(0.72_0.15_145)]",
@@ -21,6 +22,7 @@ const wellTypeLabels: Record<WellConservation["wellType"], string> = {
 }
 
 export default function WellsPage() {
+  const [tab, setTab] = useState<"main" | "cross">("main")
   const [filter, setFilter] = useState<"all" | WellConservation["violationSeverity"]>("all")
 
   const filtered = wellConservations.filter((w) => filter === "all" || w.violationSeverity === filter)
@@ -39,6 +41,14 @@ export default function WellsPage() {
           Контроль выполнения требований по обращению с фондом скважин: оформление актов консервации/ликвидации, контроль бездействующего фонда, соблюдение сроков плановой консервации.
         </p>
       </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 mb-5 border-b border-border">
+        <button onClick={() => setTab("main")} className={`px-3 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${tab === "main" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>Реестр скважин</button>
+        <button onClick={() => setTab("cross")} className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${tab === "cross" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}><Database className="size-3" /> Сверка с мастерфайлом</button>
+      </div>
+      {tab === "cross" && <MasterfileCrossCheck module="conservation" />}
+      {tab === "main" && (<>
 
       {/* Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
@@ -134,6 +144,7 @@ export default function WellsPage() {
           </tbody>
         </table>
       </div>
+      </>)}
     </AppShell>
   )
 }

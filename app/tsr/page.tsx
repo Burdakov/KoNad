@@ -2,9 +2,10 @@
 
 import { AppShell } from "@/components/app-shell"
 import { StatusBadge, StatusDot } from "@/components/status-badge"
+import { MasterfileCrossCheck } from "@/components/masterfile-cross-check"
 import { tsrIndicators, tsrResearchPrograms } from "@/lib/mock-data"
 import { useState } from "react"
-import { TrendingUp, TrendingDown, Minus, FlaskConical } from "lucide-react"
+import { TrendingUp, TrendingDown, Minus, FlaskConical, Database } from "lucide-react"
 
 function DeviationCell({ dev, controlled }: { dev: number; controlled: boolean }) {
   const abs = Math.abs(dev)
@@ -31,7 +32,8 @@ function DeviationCell({ dev, controlled }: { dev: number; controlled: boolean }
 }
 
 export default function TsrPage() {
-  const [tab, setTab] = useState<"indicators" | "research">("indicators")
+  const [tab, setTab] = useState<"main" | "cross">("main")
+  const [innerTab, setInnerTab] = useState<"indicators" | "research">("indicators")
 
   const criticalCount = tsrIndicators.filter((i) => i.status === "critical").length
   const warningCount = tsrIndicators.filter((i) => i.status === "warning").length
@@ -47,6 +49,19 @@ export default function TsrPage() {
           Сравнение фактических показателей добычи с плановыми значениями ТСР. Контролируемые показатели: добыча нефти, утилизация ПНГ. Дополнительные: жидкость, вода, ГДИ.
         </p>
       </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 mb-5 border-b border-border">
+        <button onClick={() => setTab("main")} className={`px-3 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${tab === "main" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+          Показатели
+        </button>
+        <button onClick={() => setTab("cross")} className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${tab === "cross" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+          <Database className="size-3" /> Сверка с мастерфайлом
+        </button>
+      </div>
+
+      {tab === "cross" && <MasterfileCrossCheck module="tsr" />}
+      {tab === "main" && (<>
 
       {/* Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
@@ -66,22 +81,17 @@ export default function TsrPage() {
         ))}
       </div>
 
-      {/* Tabs */}
+      {/* Tabs (inner) */}
       <div className="flex gap-1 mb-4 border-b border-border">
         {(["indicators", "research"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-3 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${
-              tab === t ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
+          <button key={t} onClick={() => setInnerTab(t)}
+            className={`px-3 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${innerTab === t ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
             {t === "indicators" ? "Показатели ТСР" : "Программа исследовательских работ"}
           </button>
         ))}
       </div>
 
-      {tab === "indicators" && (
+      {innerTab === "indicators" && (
         <div className="rounded-md border border-border bg-card overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
@@ -136,7 +146,7 @@ export default function TsrPage() {
         </div>
       )}
 
-      {tab === "research" && (
+      {innerTab === "research" && (
         <div className="rounded-md border border-border bg-card overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
@@ -177,6 +187,7 @@ export default function TsrPage() {
           </table>
         </div>
       )}
+      </>)}
     </AppShell>
   )
 }

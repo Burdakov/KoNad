@@ -2,11 +2,13 @@
 
 import { AppShell } from "@/components/app-shell"
 import { StatusBadge, StatusDot } from "@/components/status-badge"
+import { MasterfileCrossCheck } from "@/components/masterfile-cross-check"
 import { reportingObligations } from "@/lib/mock-data"
 import { useState } from "react"
-import { ScrollText, CheckCircle2, XCircle, AlertTriangle, Calendar } from "lucide-react"
+import { ScrollText, CheckCircle2, XCircle, AlertTriangle, Calendar, Database } from "lucide-react"
 
 export default function ReportingPage() {
+  const [tab, setTab] = useState<"main" | "cross">("main")
   const [filter, setFilter] = useState<"all" | "critical" | "warning" | "ok">("all")
 
   const filtered = reportingObligations.filter((r) => filter === "all" || r.status === filter)
@@ -25,6 +27,14 @@ export default function ReportingPage() {
           Контроль полноты и своевременности предоставления обязательной отчётности. Проверка соответствия данных отчётов: ТСР, КЭР, данным ИС ИПР и бухгалтерской отчётности (баланс газа).
         </p>
       </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 mb-5 border-b border-border">
+        <button onClick={() => setTab("main")} className={`px-3 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${tab === "main" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>Отчётность</button>
+        <button onClick={() => setTab("cross")} className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${tab === "cross" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}><Database className="size-3" /> Сверка с мастерфайлом</button>
+      </div>
+      {tab === "cross" && <MasterfileCrossCheck module="reporting" />}
+      {tab === "main" && (<>
 
       {/* Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
@@ -132,6 +142,7 @@ export default function ReportingPage() {
           <span className="text-foreground font-medium">Перекрёстная проверка:</span> Данные отчётности автоматически сопоставляются с показателями ТСР, нормативами КЭР и фондом скважин из ИС ИПР. Расхождения более 5% фиксируются как предупреждения; более 10% — как критические нарушения.
         </p>
       </div>
+      </>)}
     </AppShell>
   )
 }

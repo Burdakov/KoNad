@@ -528,7 +528,7 @@ export const opoObjects: OpoObject[] = [
     validTo: "01.12.2027",
     daysLeft: 557,
     status: "ok",
-    comment: "Разрешение действительно",
+    comment: "Разреше��ие действительно",
   },
   {
     id: "opo5",
@@ -1017,6 +1017,366 @@ export const reportingObligations: ReportingObligation[] = [
     comment: "Отчёт в срок, данные совпадают с КЭР и ТСР",
   },
 ]
+
+// ============================================================
+// МАСТЕРФАЙЛ — центральный источник данных о добыче
+// ============================================================
+
+export type MasterfileWellStatus = "producing" | "injection" | "idle" | "conservation" | "liquidated"
+
+export interface MasterfileWell {
+  id: string
+  wellName: string
+  wellStatus: MasterfileWellStatus
+  wellStatusLabel: string
+  wellType: "production" | "injection" | "monitoring" | "appraisal"
+  wellTypeLabel: string
+  clusterId: string
+  clusterName: string
+  fieldId: string
+  fieldName: string
+  company: string
+  /** Дата запуска в добычу (первый замер) */
+  launchDate: string
+  /** Накопленная добыча нефти, тыс.т */
+  oilCumTst: number
+  /** Суточный дебит нефти, т/сут */
+  oilRateToday: number | null
+  /** Месяц последнего замера */
+  lastMeasured: string
+  /** Расшождения по модулям: есть ли покрытие документами */
+  docCoverage: {
+    spatial: boolean   // наличие проверки пространственных координат
+    tsr: boolean       // наличие в ТСР
+    land: boolean      // наличие землеотвода
+    opo: boolean       // наличие разрешения ОПО на объект кустовой площадки
+    ker: boolean       // наличие КЭР (для кустов с ФУ / газопотреблением)
+    conservation: boolean // акт консервации (если бездействует)
+    license: boolean   // лицензия покрывает участок
+    reporting: boolean // включена в последнем отчёте 6-ГР
+  }
+}
+
+export interface MasterfileCluster {
+  id: string
+  clusterName: string
+  fieldId: string
+  fieldName: string
+  company: string
+  launchDate: string
+  wellCount: number
+  producingCount: number
+  idleCount: number
+  /** Суммарный суточный дебит куста, т/сут */
+  totalOilRate: number
+  docCoverage: {
+    spatial: boolean
+    tsr: boolean
+    land: boolean
+    opo: boolean
+    ker: boolean
+    conservation: boolean
+    license: boolean
+    reporting: boolean
+  }
+}
+
+export const masterfileWells: MasterfileWell[] = [
+  // --- ООО «НефтьГаз-Запад», Западно-Сибирское, Куст 14А ---
+  {
+    id: "mw1", wellName: "14А-7", wellStatus: "producing", wellStatusLabel: "В добыче",
+    wellType: "production", wellTypeLabel: "Добывающая",
+    clusterId: "mc1", clusterName: "Куст 14А", fieldId: "mf1", fieldName: "Западно-Сибирское",
+    company: "ООО «НефтьГаз-Запад»", launchDate: "12.03.2021",
+    oilCumTst: 48.7, oilRateToday: 42.1, lastMeasured: "23.05.2026",
+    docCoverage: { spatial: false, tsr: true, land: true, opo: true, ker: true, conservation: true, license: true, reporting: true },
+  },
+  {
+    id: "mw2", wellName: "14А-12", wellStatus: "producing", wellStatusLabel: "В добыче",
+    wellType: "production", wellTypeLabel: "Добывающая",
+    clusterId: "mc1", clusterName: "Куст 14А", fieldId: "mf1", fieldName: "Западно-Сибирское",
+    company: "ООО «НефтьГаз-Запад»", launchDate: "18.06.2021",
+    oilCumTst: 36.2, oilRateToday: 28.5, lastMeasured: "23.05.2026",
+    docCoverage: { spatial: false, tsr: true, land: false, opo: true, ker: true, conservation: true, license: true, reporting: true },
+  },
+  {
+    id: "mw3", wellName: "14А-15", wellStatus: "producing", wellStatusLabel: "В добыче",
+    wellType: "production", wellTypeLabel: "Добывающая",
+    clusterId: "mc1", clusterName: "Куст 14А", fieldId: "mf1", fieldName: "Западно-Сибирское",
+    company: "ООО «НефтьГаз-Запад»", launchDate: "02.11.2022",
+    oilCumTst: 22.1, oilRateToday: 31.4, lastMeasured: "23.05.2026",
+    docCoverage: { spatial: true, tsr: true, land: true, opo: true, ker: true, conservation: true, license: true, reporting: true },
+  },
+  // --- ООО «НефтьГаз-Запад», Западно-Сибирское, Куст 7Д ---
+  {
+    id: "mw4", wellName: "7Д-4", wellStatus: "idle", wellStatusLabel: "Бездействующая",
+    wellType: "production", wellTypeLabel: "Добывающая",
+    clusterId: "mc2", clusterName: "Куст 7Д", fieldId: "mf1", fieldName: "Западно-Сибирское",
+    company: "ООО «НефтьГаз-Запад»", launchDate: "01.04.2019",
+    oilCumTst: 88.4, oilRateToday: null, lastMeasured: "01.08.2023",
+    docCoverage: { spatial: true, tsr: true, land: true, opo: true, ker: true, conservation: false, license: true, reporting: false },
+  },
+  {
+    id: "mw5", wellName: "7Д-9", wellStatus: "idle", wellStatusLabel: "Бездействующая",
+    wellType: "production", wellTypeLabel: "Добывающая",
+    clusterId: "mc2", clusterName: "Куст 7Д", fieldId: "mf1", fieldName: "Западно-Сибирское",
+    company: "ООО «НефтьГаз-Запад»", launchDate: "15.09.2020",
+    oilCumTst: 31.0, oilRateToday: null, lastMeasured: "15.10.2025",
+    docCoverage: { spatial: true, tsr: true, land: true, opo: true, ker: true, conservation: false, license: true, reporting: false },
+  },
+  // --- ООО «НефтьГаз-Запад», Северное, Куст 3А ---
+  {
+    id: "mw6", wellName: "3А-17", wellStatus: "conservation", wellStatusLabel: "На консервации",
+    wellType: "monitoring", wellTypeLabel: "Наблюдательная",
+    clusterId: "mc3", clusterName: "Куст 3А", fieldId: "mf2", fieldName: "Северное",
+    company: "ООО «НефтьГаз-Запад»", launchDate: "10.02.2018",
+    oilCumTst: 0.0, oilRateToday: null, lastMeasured: "01.03.2024",
+    docCoverage: { spatial: true, tsr: false, land: true, opo: true, ker: true, conservation: true, license: true, reporting: true },
+  },
+  // --- Новый куст СЕВ-8Е — запущен в добычу, пакета документов нет ни в одном модуле ---
+  {
+    id: "mw7", wellName: "8Е-1", wellStatus: "producing", wellStatusLabel: "В добыче",
+    wellType: "production", wellTypeLabel: "Добывающая",
+    clusterId: "mc4", clusterName: "Куст 8Е", fieldId: "mf2", fieldName: "Северное",
+    company: "ООО «НефтьГаз-Запад»", launchDate: "05.04.2026",
+    oilCumTst: 3.1, oilRateToday: 55.2, lastMeasured: "23.05.2026",
+    docCoverage: { spatial: false, tsr: false, land: false, opo: false, ker: false, conservation: true, license: false, reporting: false },
+  },
+  {
+    id: "mw8", wellName: "8Е-2", wellStatus: "producing", wellStatusLabel: "В добыче",
+    wellType: "production", wellTypeLabel: "Добывающая",
+    clusterId: "mc4", clusterName: "Куст 8Е", fieldId: "mf2", fieldName: "Северное",
+    company: "ООО «НефтьГаз-Запад»", launchDate: "12.04.2026",
+    oilCumTst: 2.4, oilRateToday: 48.7, lastMeasured: "23.05.2026",
+    docCoverage: { spatial: false, tsr: false, land: false, opo: false, ker: false, conservation: true, license: false, reporting: false },
+  },
+  // --- АО «СеверДобыча», Арктическое, Куст 22Б ---
+  {
+    id: "mw9", wellName: "22Б-3", wellStatus: "producing", wellStatusLabel: "В добыче",
+    wellType: "production", wellTypeLabel: "Добывающая",
+    clusterId: "mc5", clusterName: "Куст 22Б", fieldId: "mf3", fieldName: "Арктическое",
+    company: "АО «СеверДобыча»", launchDate: "20.07.2020",
+    oilCumTst: 112.8, oilRateToday: 78.3, lastMeasured: "23.05.2026",
+    docCoverage: { spatial: false, tsr: true, land: false, opo: true, ker: true, conservation: true, license: true, reporting: true },
+  },
+  {
+    id: "mw10", wellName: "31В-8", wellStatus: "producing", wellStatusLabel: "В добыче",
+    wellType: "production", wellTypeLabel: "Добывающая",
+    clusterId: "mc6", clusterName: "Куст 31В", fieldId: "mf3", fieldName: "Арктическое",
+    company: "АО «СеверДобыча»", launchDate: "14.11.2021",
+    oilCumTst: 67.4, oilRateToday: 61.0, lastMeasured: "23.05.2026",
+    docCoverage: { spatial: false, tsr: true, land: true, opo: true, ker: true, conservation: true, license: true, reporting: true },
+  },
+  // --- Новый куст АРК-45Г — запущен, частично без документов ---
+  {
+    id: "mw11", wellName: "45Г-1", wellStatus: "producing", wellStatusLabel: "В добыче",
+    wellType: "production", wellTypeLabel: "Добывающая",
+    clusterId: "mc7", clusterName: "Куст 45Г", fieldId: "mf3", fieldName: "Арктическое",
+    company: "АО «СеверДобыча»", launchDate: "01.03.2026",
+    oilCumTst: 5.8, oilRateToday: 92.4, lastMeasured: "23.05.2026",
+    docCoverage: { spatial: false, tsr: false, land: false, opo: false, ker: false, conservation: true, license: true, reporting: false },
+  },
+  {
+    id: "mw12", wellName: "45Г-2", wellStatus: "producing", wellStatusLabel: "В добыче",
+    wellType: "production", wellTypeLabel: "Добывающая",
+    clusterId: "mc7", clusterName: "Куст 45Г", fieldId: "mf3", fieldName: "Арктическое",
+    company: "АО «СеверДобыча»", launchDate: "07.03.2026",
+    oilCumTst: 5.1, oilRateToday: 87.1, lastMeasured: "23.05.2026",
+    docCoverage: { spatial: false, tsr: false, land: false, opo: false, ker: false, conservation: true, license: true, reporting: false },
+  },
+  // --- ПАО «ТюменьРесурс», Центральное ---
+  {
+    id: "mw13", wellName: "8Г-1", wellStatus: "producing", wellStatusLabel: "В добыче",
+    wellType: "production", wellTypeLabel: "Добывающая",
+    clusterId: "mc8", clusterName: "Куст 8Г", fieldId: "mf4", fieldName: "Центральное",
+    company: "ПАО «ТюменьРесурс»", launchDate: "03.06.2018",
+    oilCumTst: 201.3, oilRateToday: 35.8, lastMeasured: "23.05.2026",
+    docCoverage: { spatial: true, tsr: true, land: true, opo: true, ker: true, conservation: true, license: true, reporting: true },
+  },
+  {
+    id: "mw14", wellName: "8Г-3", wellStatus: "conservation", wellStatusLabel: "На консервации",
+    wellType: "production", wellTypeLabel: "Добывающая",
+    clusterId: "mc8", clusterName: "Куст 8Г", fieldId: "mf4", fieldName: "Центральное",
+    company: "ПАО «ТюменьРесурс»", launchDate: "17.09.2019",
+    oilCumTst: 44.1, oilRateToday: null, lastMeasured: "10.11.2025",
+    docCoverage: { spatial: true, tsr: true, land: true, opo: true, ker: true, conservation: true, license: true, reporting: true },
+  },
+]
+
+export const masterfileClusters: MasterfileCluster[] = [
+  { id: "mc1", clusterName: "Куст 14А", fieldId: "mf1", fieldName: "Западно-Сибирское", company: "ООО «НефтьГаз-Запад»", launchDate: "12.03.2021", wellCount: 3, producingCount: 3, idleCount: 0, totalOilRate: 102.0, docCoverage: { spatial: false, tsr: true, land: false, opo: true, ker: true, conservation: true, license: true, reporting: true } },
+  { id: "mc2", clusterName: "Куст 7Д", fieldId: "mf1", fieldName: "Западно-Сибирское", company: "ООО «НефтьГаз-Запад»", launchDate: "01.04.2019", wellCount: 2, producingCount: 0, idleCount: 2, totalOilRate: 0, docCoverage: { spatial: true, tsr: true, land: true, opo: true, ker: true, conservation: false, license: true, reporting: false } },
+  { id: "mc3", clusterName: "Куст 3А", fieldId: "mf2", fieldName: "Северное", company: "ООО «НефтьГаз-Запад»", launchDate: "10.02.2018", wellCount: 1, producingCount: 0, idleCount: 0, totalOilRate: 0, docCoverage: { spatial: true, tsr: false, land: true, opo: true, ker: true, conservation: true, license: true, reporting: true } },
+  { id: "mc4", clusterName: "Куст 8Е", fieldId: "mf2", fieldName: "Северное", company: "ООО «НефтьГаз-Запад»", launchDate: "05.04.2026", wellCount: 2, producingCount: 2, idleCount: 0, totalOilRate: 103.9, docCoverage: { spatial: false, tsr: false, land: false, opo: false, ker: false, conservation: true, license: false, reporting: false } },
+  { id: "mc5", clusterName: "Куст 22Б", fieldId: "mf3", fieldName: "Арктическое", company: "АО «СеверДобыча»", launchDate: "20.07.2020", wellCount: 2, producingCount: 2, idleCount: 0, totalOilRate: 139.3, docCoverage: { spatial: false, tsr: true, land: false, opo: true, ker: true, conservation: true, license: true, reporting: true } },
+  { id: "mc6", clusterName: "Куст 31В", fieldId: "mf3", fieldName: "Арктическое", company: "АО «СеверДобыча»", launchDate: "14.11.2021", wellCount: 2, producingCount: 2, idleCount: 0, totalOilRate: 61.0, docCoverage: { spatial: false, tsr: true, land: true, opo: true, ker: true, conservation: true, license: true, reporting: true } },
+  { id: "mc7", clusterName: "Куст 45Г", fieldId: "mf3", fieldName: "Арктическое", company: "АО «СеверДобыча»", launchDate: "01.03.2026", wellCount: 2, producingCount: 2, idleCount: 0, totalOilRate: 179.5, docCoverage: { spatial: false, tsr: false, land: false, opo: false, ker: false, conservation: true, license: true, reporting: false } },
+  { id: "mc8", clusterName: "Куст 8Г", fieldId: "mf4", fieldName: "Центральное", company: "ПАО «ТюменьРесурс»", launchDate: "03.06.2018", wellCount: 2, producingCount: 1, idleCount: 0, totalOilRate: 35.8, docCoverage: { spatial: true, tsr: true, land: true, opo: true, ker: true, conservation: true, license: true, reporting: true } },
+]
+
+// ── Дорожная карта ────────────────────────────────────────────────────────────
+// Для каждого модуля: какие шаги нужны, если объект не покрыт документами,
+// с ответственным подразделением и типовым сроком (рабочие дни).
+
+export type RoadmapModule = keyof MasterfileWell["docCoverage"]
+
+export interface RoadmapStep {
+  order: number
+  action: string
+  department: string
+  daysToComplete: number
+}
+
+export const roadmapTemplates: Record<RoadmapModule, { title: string; steps: RoadmapStep[] }> = {
+  spatial: {
+    title: "Проверка пространственных координат",
+    steps: [
+      { order: 1, action: "Запросить инклинометрические данные и данные ГТИ по скважине у буровой службы", department: "Буровой отдел", daysToComplete: 5 },
+      { order: 2, action: "Актуализировать векторный контур запасов в ГИС-системе (подсчётный план)", department: "Геологическая служба", daysToComplete: 10 },
+      { order: 3, action: "Выполнить пространственную проверку совпадения забоя с контуром в ГИС", department: "Служба геолого-маркшейдерского контроля", daysToComplete: 5 },
+      { order: 4, action: "Оформить акт пространственной проверки / протокол нарушения", department: "Служба надзора", daysToComplete: 3 },
+    ],
+  },
+  tsr: {
+    title: "Включение в технологическую схему разработки (ТСР)",
+    steps: [
+      { order: 1, action: "Подготовить геолого-технические обоснования включения объекта в ТСР", department: "Геологическая служба", daysToComplete: 15 },
+      { order: 2, action: "Сформировать проектные показатели добычи (дебит, обводнённость, ГФ) для нового объекта", department: "Отдел разработки", daysToComplete: 10 },
+      { order: 3, action: "Внести изменения в действующий документ ТСР (дополнение / пересмотр)", department: "Отдел разработки", daysToComplete: 20 },
+      { order: 4, action: "Согласовать изменения ТСР с Роснедра (экспертиза)", department: "Юридический отдел / Управление лицензирования", daysToComplete: 60 },
+      { order: 5, action: "Получить утверждённый протокол ЦКР / ТКР", department: "Управление лицензирования", daysToComplete: 30 },
+    ],
+  },
+  land: {
+    title: "Оформление документов на земельный отвод",
+    steps: [
+      { order: 1, action: "Провести землеустроительные работы, подготовить межевой план по объекту", department: "Земельный отдел", daysToComplete: 20 },
+      { order: 2, action: "Подать заявление на аренду / установление сервитута в орган исполнительной власти субъекта", department: "Земельный отдел", daysToComplete: 5 },
+      { order: 3, action: "Получить разрешение на использование земель (временное), при необходимости", department: "Земельный отдел", daysToComplete: 30 },
+      { order: 4, action: "Заключить и зарегистрировать договор аренды земельного участка в Росреестре", department: "Юридический отдел", daysToComplete: 30 },
+      { order: 5, action: "Загрузить правоустанавливающий документ в систему КоНад", department: "ОГД (учёт документов)", daysToComplete: 2 },
+    ],
+  },
+  opo: {
+    title: "Получение разрешения на эксплуатацию ОПО",
+    steps: [
+      { order: 1, action: "Провести идентификацию объекта как ОПО, определить класс опасности (I–IV)", department: "Служба промышленной безопасности", daysToComplete: 10 },
+      { order: 2, action: "Разработать декларацию промышленной безопасности (если класс I–II)", department: "Служба ПБ / проектная организация", daysToComplete: 30 },
+      { order: 3, action: "Поставить объект на учёт в Ростехнадзор (ФГИС ОПО)", department: "Служба ПБ", daysToComplete: 15 },
+      { order: 4, action: "Провести первичный технический осмотр / экспертизу промышленной безопасности", department: "Аккредитованная экспертная организация", daysToComplete: 20 },
+      { order: 5, action: "Получить разрешение на эксплуатацию ОПО в Ростехнадзоре", department: "Служба ПБ", daysToComplete: 30 },
+    ],
+  },
+  ker: {
+    title: "Получение комплексного экологического разрешения (КЭР)",
+    steps: [
+      { order: 1, action: "Разработать / актуализировать инвентаризацию источников выбросов по объекту", department: "Экологическая служба", daysToComplete: 20 },
+      { order: 2, action: "Выполнить расчёт нормативов допустимых выбросов (НДВ / ВСВ)", department: "Экологическая служба / специализированная организация", daysToComplete: 30 },
+      { order: 3, action: "Подготовить заявку на получение КЭР, приложить НДВ и ПНООЛР", department: "Экологическая служба", daysToComplete: 15 },
+      { order: 4, action: "Подать заявку в Росприроднадзор через ГИСП / личный кабинет", department: "Экологическая служба", daysToComplete: 5 },
+      { order: 5, action: "Получить КЭР (рассмотрение Росприроднадзором)", department: "Экологическая служба", daysToComplete: 90 },
+    ],
+  },
+  conservation: {
+    title: "Оформление акта консервации скважины",
+    steps: [
+      { order: 1, action: "Подготовить план-программу консервации скважины", department: "Отдел разработки / Геологическая служба", daysToComplete: 7 },
+      { order: 2, action: "Согласовать план-программу консервации с территориальным органом Роснедра", department: "Управление лицензирования", daysToComplete: 20 },
+      { order: 3, action: "Провести технические мероприятия по консервации (установка пробок, герметизация)", department: "Буровой отдел / ТКРС", daysToComplete: 10 },
+      { order: 4, action: "Оформить и подписать Акт консервации, утвердить у главного инженера", department: "Технический отдел", daysToComplete: 5 },
+      { order: 5, action: "Загрузить акт консервации в систему КоНад и обновить статус скважины", department: "ОГД (учёт документов)", daysToComplete: 2 },
+    ],
+  },
+  license: {
+    title: "Подтверждение покрытия объекта лицензией / внесение в программу работ",
+    steps: [
+      { order: 1, action: "Проверить координаты объекта на соответствие границам лицензионного участка", department: "Управление лицензирования / Геологическая служба", daysToComplete: 5 },
+      { order: 2, action: "В случае выхода за границы: подать заявление об изменении границ ЛУ в Роснедра", department: "Управление лицензирования / Юридический отдел", daysToComplete: 90 },
+      { order: 3, action: "Внести объект в программу работ по лицензии (корректировка ПР)", department: "Управление лицензирования", daysToComplete: 20 },
+      { order: 4, action: "Согласовать изменения в программе работ с Роснедра", department: "Управление лицензирования", daysToComplete: 30 },
+    ],
+  },
+  reporting: {
+    title: "Включение в регламентную отчётность (6-ГР)",
+    steps: [
+      { order: 1, action: "Проверить наличие скважины / куста в реестре объектов 6-ГР в системе учёта", department: "Отдел геологической документации", daysToComplete: 2 },
+      { order: 2, action: "Добавить объект в форму 6-ГР, внести данные добычи начиная с даты запуска", department: "Отдел геологической документации", daysToComplete: 5 },
+      { order: 3, action: "Представить корректировочный / уточняющий отчёт 6-ГР в Роснедра", department: "Отдел геологической документации / Юридический отдел", daysToComplete: 15 },
+    ],
+  },
+}
+
+// ── Вычислить дорожные карты для объектов без покрытия ──────────────────────
+export interface RoadmapItem {
+  module: RoadmapModule
+  moduleTitle: string
+  steps: (RoadmapStep & { targetDate: string })[]
+  totalDays: number
+}
+
+function addWorkingDays(from: Date, days: number): string {
+  let d = new Date(from)
+  let added = 0
+  while (added < days) {
+    d.setDate(d.getDate() + 1)
+    const dow = d.getDay()
+    if (dow !== 0 && dow !== 6) added++
+  }
+  return d.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" })
+}
+
+export function buildRoadmapForWell(well: MasterfileWell): RoadmapItem[] {
+  const today = new Date(2026, 4, 23) // 23.05.2026
+  const items: RoadmapItem[] = []
+  const modules = Object.entries(well.docCoverage) as [RoadmapModule, boolean][]
+  for (const [mod, covered] of modules) {
+    if (covered) continue
+    const tpl = roadmapTemplates[mod]
+    let cursor = today
+    const steps = tpl.steps.map((s) => {
+      const targetDate = addWorkingDays(cursor, s.daysToComplete)
+      cursor = new Date(cursor)
+      cursor.setDate(cursor.getDate() + s.daysToComplete)
+      return { ...s, targetDate }
+    })
+    const totalDays = tpl.steps.reduce((acc, s) => acc + s.daysToComplete, 0)
+    items.push({ module: mod, moduleTitle: tpl.title, steps, totalDays })
+  }
+  return items
+}
+
+export function buildRoadmapForCluster(cluster: MasterfileCluster): RoadmapItem[] {
+  const today = new Date(2026, 4, 23)
+  const items: RoadmapItem[] = []
+  const modules = Object.entries(cluster.docCoverage) as [RoadmapModule, boolean][]
+  for (const [mod, covered] of modules) {
+    if (covered) continue
+    const tpl = roadmapTemplates[mod]
+    let cursor = today
+    const steps = tpl.steps.map((s) => {
+      const targetDate = addWorkingDays(cursor, s.daysToComplete)
+      cursor = new Date(cursor)
+      cursor.setDate(cursor.getDate() + s.daysToComplete)
+      return { ...s, targetDate }
+    })
+    const totalDays = tpl.steps.reduce((acc, s) => acc + s.daysToComplete, 0)
+    items.push({ module: mod, moduleTitle: tpl.title, steps, totalDays })
+  }
+  return items
+}
+
+// ── Список всех объектов с пропущенными документами ──────────────────────────
+export function getUncoveredObjects() {
+  return masterfileWells.filter((w) =>
+    Object.values(w.docCoverage).some((v) => !v)
+  )
+}
+
+export function getUncoveredClusters() {
+  return masterfileClusters.filter((c) =>
+    Object.values(c.docCoverage).some((v) => !v)
+  )
+}
 
 // ---------- SHARED ----------
 

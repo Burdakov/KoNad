@@ -2,9 +2,10 @@
 
 import { AppShell } from "@/components/app-shell"
 import { StatusBadge, StatusDot } from "@/components/status-badge"
+import { MasterfileCrossCheck } from "@/components/masterfile-cross-check"
 import { landDocuments, type LandDocument } from "@/lib/mock-data"
 import { useState } from "react"
-import { LandPlot, AlertTriangle, Calendar } from "lucide-react"
+import { LandPlot, AlertTriangle, Calendar, Database } from "lucide-react"
 
 const docTypeColors: Record<LandDocument["docType"], string> = {
   lease: "bg-[oklch(0.65_0.15_210/0.12)] text-[oklch(0.75_0.12_210)]",
@@ -24,6 +25,7 @@ function DaysLeftCell({ days }: { days: number }) {
 }
 
 export default function LandPage() {
+  const [tab, setTab] = useState<"main" | "cross">("main")
   const [filter, setFilter] = useState<"all" | "critical" | "warning" | "ok">("all")
 
   const filtered = landDocuments.filter((d) => filter === "all" || d.status === filter)
@@ -43,6 +45,14 @@ export default function LandPage() {
           Контроль наличия и актуальности разрешительной документации на пользование землёй: договора аренды, землеотводные акты, сервитуты и разрешения на использование земельных участков.
         </p>
       </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 mb-5 border-b border-border">
+        <button onClick={() => setTab("main")} className={`px-3 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${tab === "main" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>Документы</button>
+        <button onClick={() => setTab("cross")} className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${tab === "cross" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}><Database className="size-3" /> Сверка с мастерфайлом</button>
+      </div>
+      {tab === "cross" && <MasterfileCrossCheck module="land" />}
+      {tab === "main" && (<>
 
       {/* Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
@@ -141,6 +151,7 @@ export default function LandPage() {
           </tbody>
         </table>
       </div>
+      </>)}
     </AppShell>
   )
 }

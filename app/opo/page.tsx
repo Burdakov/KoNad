@@ -2,9 +2,10 @@
 
 import { AppShell } from "@/components/app-shell"
 import { StatusBadge, StatusDot } from "@/components/status-badge"
+import { MasterfileCrossCheck } from "@/components/masterfile-cross-check"
 import { opoObjects } from "@/lib/mock-data"
 import { useState } from "react"
-import { Flame, Calendar, Shield } from "lucide-react"
+import { Flame, Calendar, Shield, Database } from "lucide-react"
 
 const classColors: Record<string, string> = {
   I: "bg-[oklch(0.52_0.22_25/0.2)] text-[oklch(0.72_0.18_25)] border border-[oklch(0.52_0.22_25/0.4)]",
@@ -20,6 +21,7 @@ function DaysLeftCell({ days }: { days: number }) {
 }
 
 export default function OpoPage() {
+  const [tab, setTab] = useState<"main" | "cross">("main")
   const [filter, setFilter] = useState<"all" | "critical" | "warning" | "ok">("all")
 
   const filtered = opoObjects.filter((o) => filter === "all" || o.status === filter)
@@ -37,6 +39,14 @@ export default function OpoPage() {
           Контроль наличия действующих разрешений на эксплуатацию ОПО. При отсутствии или просрочке разрешения эксплуатация объекта запрещена. Классы опасности: I — чрезвычайно высокая, II — высокая, III — средняя, IV — низкая.
         </p>
       </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 mb-5 border-b border-border">
+        <button onClick={() => setTab("main")} className={`px-3 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${tab === "main" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>Реестр ОПО</button>
+        <button onClick={() => setTab("cross")} className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${tab === "cross" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}><Database className="size-3" /> Сверка с мастерфайлом</button>
+      </div>
+      {tab === "cross" && <MasterfileCrossCheck module="opo" />}
+      {tab === "main" && (<>
 
       {/* Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
@@ -135,6 +145,7 @@ export default function OpoPage() {
           </tbody>
         </table>
       </div>
+      </>)}
     </AppShell>
   )
 }

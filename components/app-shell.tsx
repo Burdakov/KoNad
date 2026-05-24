@@ -14,6 +14,7 @@ import {
   Bell,
   RefreshCw,
   ShieldAlert,
+  Database,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -21,6 +22,7 @@ import { cn } from "@/lib/utils"
 
 const navItems = [
   { label: "Дашборд", href: "/", icon: LayoutDashboard },
+  { label: "Мастерфайл", href: "/masterfile", icon: Database, badge: 4 },
   { label: "Пространственные", href: "/spatial", icon: Map, badge: 6 },
   { label: "ТСР / Госплан", href: "/tsr", icon: TrendingUp, badge: 3 },
   { label: "Земельные отводы", href: "/land", icon: LandPlot, badge: 2 },

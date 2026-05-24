@@ -2,9 +2,10 @@
 
 import { AppShell } from "@/components/app-shell"
 import { StatusBadge, StatusDot } from "@/components/status-badge"
+import { MasterfileCrossCheck } from "@/components/masterfile-cross-check"
 import { kerEmissionSources } from "@/lib/mock-data"
 import { useState } from "react"
-import { Leaf, Wind, AlertTriangle } from "lucide-react"
+import { Leaf, Wind, AlertTriangle, Database } from "lucide-react"
 
 function ExceedBar({ limit, fact, projected }: { limit: number; fact: number; projected: number }) {
   const max = Math.max(limit * 1.5, projected * 1.1)
@@ -40,6 +41,7 @@ function ExceedBar({ limit, fact, projected }: { limit: number; fact: number; pr
 }
 
 export default function KerPage() {
+  const [tab, setTab] = useState<"main" | "cross">("main")
   const [filter, setFilter] = useState<"all" | "critical" | "warning" | "ok">("all")
   const [typeFilter, setTypeFilter] = useState<"all" | "flare" | "stationary">("all")
 
@@ -65,6 +67,14 @@ export default function KerPage() {
           Контроль наличия КЭР и соответствия фактических выбросов загрязняющих веществ нормативам, установленным в КЭР. Особый контроль — факельные установки. Превышение нормативов — серьёзное нарушение.
         </p>
       </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 mb-5 border-b border-border">
+        <button onClick={() => setTab("main")} className={`px-3 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${tab === "main" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>Источники выбросов</button>
+        <button onClick={() => setTab("cross")} className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${tab === "cross" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}><Database className="size-3" /> Сверка с мастерфайлом</button>
+      </div>
+      {tab === "cross" && <MasterfileCrossCheck module="ker" />}
+      {tab === "main" && (<>
 
       {/* Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
@@ -173,6 +183,7 @@ export default function KerPage() {
         <div className="flex items-center gap-1.5"><span className="inline-block w-3 h-2 rounded-sm bg-[oklch(0.72_0.18_70/0.25)]" /> Прогноз год</div>
         <div className="flex items-center gap-1.5"><span className="inline-block w-px h-3 bg-white/60" /> Предельное значение</div>
       </div>
+      </>)}
     </AppShell>
   )
 }
