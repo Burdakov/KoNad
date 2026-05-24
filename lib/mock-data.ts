@@ -273,7 +273,6 @@ export const tsrIndicators: TsrIndicator[] = [
     status: "warning",
     controlled: true,
     tsrDoc: "ТСР-ЗСМ-2024",
-    field: "Северное",
     year: 2026,
   },
   {
@@ -528,7 +527,7 @@ export const opoObjects: OpoObject[] = [
     validTo: "01.12.2027",
     daysLeft: 557,
     status: "ok",
-    comment: "Разреше����ие действительно",
+    comment: "Разреше������ие действительно",
   },
   {
     id: "opo5",
@@ -872,6 +871,7 @@ export const licenses: License[] = [
     issuedDate: "20.01.2022",
     expiryDate: "20.01.2027",
     daysLeft: 607,
+    status: "critical",
     geStudyDeadline: "01.01.2027",
     geStudyStatus: "warning",
     workProgram: [
@@ -1308,7 +1308,7 @@ export const masterfileWells: MasterfileWell[] = [
     wellType: "injection", wellTypeLabel: "Нагнетательная",
     clusterId: "pmc3", clusterName: "Куст 11Ж", fieldId: "mf2", fieldName: "Северное",
     company: "ООО «НефтьГаз-Запад»", launchDate: "",
-    plannedLaunchDate: "01.04.2027", plannedOilRate: null, plannedOilYear: 0,
+    plannedLaunchDate: "01.04.2027", plannedOilYear: 0,
     oilCumTst: 0, oilRateToday: null, lastMeasured: "",
     docCoverage: { spatial: false, tsr: false, land: false, opo: false, ker: false, conservation: true, license: false, reporting: false },
   },
@@ -1410,7 +1410,7 @@ export const masterfileClusters: MasterfileCluster[] = [
 
 // ── Дорожная карта ────────────────────────────────────────────────────────────
 // Для каждого модуля: какие шаги нужны, если объект не покрыт документами.
-// plannedDeadline (опционально): для плановых объектов — крайний срок до запуска.
+// plannedDeadline (опциональн��): для плановых объектов — крайний срок до запуска.
 
 export type RoadmapModule = keyof MasterfileWell["docCoverage"]
 

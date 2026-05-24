@@ -50,12 +50,20 @@ export default function OpoPage() {
 
       {/* Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-        {[
-          { label: "Всего объектов", value: opoObjects.length },
-          { label: "Просроченные", value: critical, severity: "critical" as const },
-          { label: "Истекают в 60 дн.", value: warning, severity: "warning" as const },
-          { label: "В порядке", value: ok, severity: "ok" as const },
-        ].map((s) => (
+        {/* Total — no severity dot */}
+        <div className="rounded-md border border-border bg-card px-4 py-3">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[11px] text-muted-foreground">Всего объектов</span>
+          </div>
+          <span className="text-2xl font-bold font-mono text-foreground">{opoObjects.length}</span>
+        </div>
+        {(
+          [
+            { label: "Просроченные",     value: critical, severity: "critical" },
+            { label: "Истекают в 60 дн.", value: warning,  severity: "warning"  },
+            { label: "В порядке",         value: ok,        severity: "ok"       },
+          ] as { label: string; value: number; severity: import("@/lib/mock-data").ViolationSeverity }[]
+        ).map((s) => (
           <div key={s.label} className="rounded-md border border-border bg-card px-4 py-3">
             <div className="flex items-center gap-2 mb-1">
               <StatusDot severity={s.severity} />
