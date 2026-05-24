@@ -528,7 +528,7 @@ export const opoObjects: OpoObject[] = [
     validTo: "01.12.2027",
     daysLeft: 557,
     status: "ok",
-    comment: "Разреше��ие действительно",
+    comment: "Разреше����ие действительно",
   },
   {
     id: "opo5",
@@ -1023,10 +1023,14 @@ export const reportingObligations: ReportingObligation[] = [
 // ============================================================
 
 export type MasterfileWellStatus = "producing" | "injection" | "idle" | "conservation" | "liquidated"
+/** fact = фактически запущен и добывает; plan = плановый запуск (бурение/строительство ещё не завершено) */
+export type MasterfileDataType = "fact" | "plan"
 
 export interface MasterfileWell {
   id: string
   wellName: string
+  /** fact / plan */
+  dataType: MasterfileDataType
   wellStatus: MasterfileWellStatus
   wellStatusLabel: string
   wellType: "production" | "injection" | "monitoring" | "appraisal"
@@ -1036,39 +1040,56 @@ export interface MasterfileWell {
   fieldId: string
   fieldName: string
   company: string
-  /** Дата запуска в добычу (первый замер) */
+  /** Дата фактического запуска в добычу (первый замер) — только для fact */
   launchDate: string
-  /** Накопленная добыча нефти, тыс.т */
+  /** Плановая дата запуска — только для plan */
+  plannedLaunchDate?: string
+  /** Плановый начальный дебит нефти, т/сут */
+  plannedOilRate?: number
+  /** Плановая добыча в первый полный год, тыс.т */
+  plannedOilYear?: number
+  /** Накопленная добыча нефти, тыс.т (только fact) */
   oilCumTst: number
-  /** Суточный дебит нефти, т/сут */
+  /** Суточный дебит нефти, т/сут (только fact) */
   oilRateToday: number | null
-  /** Месяц последнего замера */
+  /** Месяц последнего замера (только fact) */
   lastMeasured: string
-  /** Расшождения по модулям: есть ли покрытие документами */
+  /**
+   * Покрытие документами по модулям.
+   * true = документ присутствует и актуален
+   * false = отсутствует / требует оформления / не соответствует
+   */
   docCoverage: {
-    spatial: boolean   // наличие проверки пространственных координат
-    tsr: boolean       // наличие в ТСР
-    land: boolean      // наличие землеотвода
-    opo: boolean       // наличие разрешения ОПО на объект кустовой площадки
-    ker: boolean       // наличие КЭР (для кустов с ФУ / газопотреблением)
-    conservation: boolean // акт консервации (если бездействует)
-    license: boolean   // лицензия покрывает участок
-    reporting: boolean // включена в последнем отчёте 6-ГР
+    spatial: boolean
+    tsr: boolean
+    land: boolean
+    opo: boolean
+    ker: boolean
+    conservation: boolean
+    license: boolean
+    reporting: boolean
   }
 }
 
 export interface MasterfileCluster {
   id: string
   clusterName: string
+  /** fact / plan */
+  dataType: MasterfileDataType
   fieldId: string
   fieldName: string
   company: string
   launchDate: string
+  plannedLaunchDate?: string
   wellCount: number
   producingCount: number
   idleCount: number
   /** Суммарный суточный дебит куста, т/сут */
   totalOilRate: number
+  /** Плановый суточный дебит куста (для plan), т/сут */
+  plannedTotalOilRate?: number
+  /** Плановый год запуска куста */
+  plannedYear?: 2026 | 2027
   docCoverage: {
     spatial: boolean
     tsr: boolean
@@ -1082,9 +1103,13 @@ export interface MasterfileCluster {
 }
 
 export const masterfileWells: MasterfileWell[] = [
+  // ═══════════════════════════════════════════════════════════
+  // ФАКТИЧЕСКИЕ ОБЪЕКТЫ (dataType: "fact")
+  // ═══════════════════════════════════════════════════════════
+
   // --- ООО «НефтьГаз-Запад», Западно-Сибирское, Куст 14А ---
   {
-    id: "mw1", wellName: "14А-7", wellStatus: "producing", wellStatusLabel: "В добыче",
+    id: "mw1", wellName: "14А-7", dataType: "fact", wellStatus: "producing", wellStatusLabel: "В добыче",
     wellType: "production", wellTypeLabel: "Добывающая",
     clusterId: "mc1", clusterName: "Куст 14А", fieldId: "mf1", fieldName: "Западно-Сибирское",
     company: "ООО «НефтьГаз-Запад»", launchDate: "12.03.2021",
@@ -1092,7 +1117,7 @@ export const masterfileWells: MasterfileWell[] = [
     docCoverage: { spatial: false, tsr: true, land: true, opo: true, ker: true, conservation: true, license: true, reporting: true },
   },
   {
-    id: "mw2", wellName: "14А-12", wellStatus: "producing", wellStatusLabel: "В добыче",
+    id: "mw2", wellName: "14А-12", dataType: "fact", wellStatus: "producing", wellStatusLabel: "В добыче",
     wellType: "production", wellTypeLabel: "Добывающая",
     clusterId: "mc1", clusterName: "Куст 14А", fieldId: "mf1", fieldName: "Западно-Сибирское",
     company: "ООО «НефтьГаз-Запад»", launchDate: "18.06.2021",
@@ -1100,7 +1125,7 @@ export const masterfileWells: MasterfileWell[] = [
     docCoverage: { spatial: false, tsr: true, land: false, opo: true, ker: true, conservation: true, license: true, reporting: true },
   },
   {
-    id: "mw3", wellName: "14А-15", wellStatus: "producing", wellStatusLabel: "В добыче",
+    id: "mw3", wellName: "14А-15", dataType: "fact", wellStatus: "producing", wellStatusLabel: "В добыче",
     wellType: "production", wellTypeLabel: "Добывающая",
     clusterId: "mc1", clusterName: "Куст 14А", fieldId: "mf1", fieldName: "Западно-Сибирское",
     company: "ООО «НефтьГаз-Запад»", launchDate: "02.11.2022",
@@ -1109,7 +1134,7 @@ export const masterfileWells: MasterfileWell[] = [
   },
   // --- ООО «НефтьГаз-Запад», Западно-Сибирское, Куст 7Д ---
   {
-    id: "mw4", wellName: "7Д-4", wellStatus: "idle", wellStatusLabel: "Бездействующая",
+    id: "mw4", wellName: "7Д-4", dataType: "fact", wellStatus: "idle", wellStatusLabel: "Бездействующая",
     wellType: "production", wellTypeLabel: "Добывающая",
     clusterId: "mc2", clusterName: "Куст 7Д", fieldId: "mf1", fieldName: "Западно-Сибирское",
     company: "ООО «НефтьГаз-Запад»", launchDate: "01.04.2019",
@@ -1117,7 +1142,7 @@ export const masterfileWells: MasterfileWell[] = [
     docCoverage: { spatial: true, tsr: true, land: true, opo: true, ker: true, conservation: false, license: true, reporting: false },
   },
   {
-    id: "mw5", wellName: "7Д-9", wellStatus: "idle", wellStatusLabel: "Бездействующая",
+    id: "mw5", wellName: "7Д-9", dataType: "fact", wellStatus: "idle", wellStatusLabel: "Бездействующая",
     wellType: "production", wellTypeLabel: "Добывающая",
     clusterId: "mc2", clusterName: "Куст 7Д", fieldId: "mf1", fieldName: "Западно-Сибирское",
     company: "ООО «НефтьГаз-Запад»", launchDate: "15.09.2020",
@@ -1126,16 +1151,16 @@ export const masterfileWells: MasterfileWell[] = [
   },
   // --- ООО «НефтьГаз-Запад», Северное, Куст 3А ---
   {
-    id: "mw6", wellName: "3А-17", wellStatus: "conservation", wellStatusLabel: "На консервации",
+    id: "mw6", wellName: "3А-17", dataType: "fact", wellStatus: "conservation", wellStatusLabel: "На консервации",
     wellType: "monitoring", wellTypeLabel: "Наблюдательная",
     clusterId: "mc3", clusterName: "Куст 3А", fieldId: "mf2", fieldName: "Северное",
     company: "ООО «НефтьГаз-Запад»", launchDate: "10.02.2018",
     oilCumTst: 0.0, oilRateToday: null, lastMeasured: "01.03.2024",
     docCoverage: { spatial: true, tsr: false, land: true, opo: true, ker: true, conservation: true, license: true, reporting: true },
   },
-  // --- Новый куст СЕВ-8Е — запущен в добычу, пакета документов нет ни в одном модуле ---
+  // --- Новый куст СЕВ-8Е — запущен в добычу, пакета документов нет ---
   {
-    id: "mw7", wellName: "8Е-1", wellStatus: "producing", wellStatusLabel: "В добыче",
+    id: "mw7", wellName: "8Е-1", dataType: "fact", wellStatus: "producing", wellStatusLabel: "В добыче",
     wellType: "production", wellTypeLabel: "Добывающая",
     clusterId: "mc4", clusterName: "Куст 8Е", fieldId: "mf2", fieldName: "Северное",
     company: "ООО «НефтьГаз-Запад»", launchDate: "05.04.2026",
@@ -1143,16 +1168,16 @@ export const masterfileWells: MasterfileWell[] = [
     docCoverage: { spatial: false, tsr: false, land: false, opo: false, ker: false, conservation: true, license: false, reporting: false },
   },
   {
-    id: "mw8", wellName: "8Е-2", wellStatus: "producing", wellStatusLabel: "В добыче",
+    id: "mw8", wellName: "8Е-2", dataType: "fact", wellStatus: "producing", wellStatusLabel: "В добыче",
     wellType: "production", wellTypeLabel: "Добывающая",
     clusterId: "mc4", clusterName: "Куст 8Е", fieldId: "mf2", fieldName: "Северное",
     company: "ООО «НефтьГаз-Запад»", launchDate: "12.04.2026",
     oilCumTst: 2.4, oilRateToday: 48.7, lastMeasured: "23.05.2026",
     docCoverage: { spatial: false, tsr: false, land: false, opo: false, ker: false, conservation: true, license: false, reporting: false },
   },
-  // --- АО «СеверДобыча», Арктическое, Куст 22Б ---
+  // --- АО «СеверДобыча», Арктическое ---
   {
-    id: "mw9", wellName: "22Б-3", wellStatus: "producing", wellStatusLabel: "В добыче",
+    id: "mw9", wellName: "22Б-3", dataType: "fact", wellStatus: "producing", wellStatusLabel: "В добыче",
     wellType: "production", wellTypeLabel: "Добывающая",
     clusterId: "mc5", clusterName: "Куст 22Б", fieldId: "mf3", fieldName: "Арктическое",
     company: "АО «СеверДобыча»", launchDate: "20.07.2020",
@@ -1160,16 +1185,16 @@ export const masterfileWells: MasterfileWell[] = [
     docCoverage: { spatial: false, tsr: true, land: false, opo: true, ker: true, conservation: true, license: true, reporting: true },
   },
   {
-    id: "mw10", wellName: "31В-8", wellStatus: "producing", wellStatusLabel: "В добыче",
+    id: "mw10", wellName: "31В-8", dataType: "fact", wellStatus: "producing", wellStatusLabel: "В добыче",
     wellType: "production", wellTypeLabel: "Добывающая",
     clusterId: "mc6", clusterName: "Куст 31В", fieldId: "mf3", fieldName: "Арктическое",
     company: "АО «СеверДобыча»", launchDate: "14.11.2021",
     oilCumTst: 67.4, oilRateToday: 61.0, lastMeasured: "23.05.2026",
     docCoverage: { spatial: false, tsr: true, land: true, opo: true, ker: true, conservation: true, license: true, reporting: true },
   },
-  // --- Новый куст АРК-45Г — запущен, частично без документов ---
+  // --- Куст 45Г — запущен, частично без документов ---
   {
-    id: "mw11", wellName: "45Г-1", wellStatus: "producing", wellStatusLabel: "В добыче",
+    id: "mw11", wellName: "45Г-1", dataType: "fact", wellStatus: "producing", wellStatusLabel: "В добыче",
     wellType: "production", wellTypeLabel: "Добывающая",
     clusterId: "mc7", clusterName: "Куст 45Г", fieldId: "mf3", fieldName: "Арктическое",
     company: "АО «СеверДобыча»", launchDate: "01.03.2026",
@@ -1177,7 +1202,7 @@ export const masterfileWells: MasterfileWell[] = [
     docCoverage: { spatial: false, tsr: false, land: false, opo: false, ker: false, conservation: true, license: true, reporting: false },
   },
   {
-    id: "mw12", wellName: "45Г-2", wellStatus: "producing", wellStatusLabel: "В добыче",
+    id: "mw12", wellName: "45Г-2", dataType: "fact", wellStatus: "producing", wellStatusLabel: "В добыче",
     wellType: "production", wellTypeLabel: "Добывающая",
     clusterId: "mc7", clusterName: "Куст 45Г", fieldId: "mf3", fieldName: "Арктическое",
     company: "АО «СеверДобыча»", launchDate: "07.03.2026",
@@ -1186,7 +1211,7 @@ export const masterfileWells: MasterfileWell[] = [
   },
   // --- ПАО «ТюменьРесурс», Центральное ---
   {
-    id: "mw13", wellName: "8Г-1", wellStatus: "producing", wellStatusLabel: "В добыче",
+    id: "mw13", wellName: "8Г-1", dataType: "fact", wellStatus: "producing", wellStatusLabel: "В добыче",
     wellType: "production", wellTypeLabel: "Добывающая",
     clusterId: "mc8", clusterName: "Куст 8Г", fieldId: "mf4", fieldName: "Центральное",
     company: "ПАО «ТюменьРесурс»", launchDate: "03.06.2018",
@@ -1194,29 +1219,198 @@ export const masterfileWells: MasterfileWell[] = [
     docCoverage: { spatial: true, tsr: true, land: true, opo: true, ker: true, conservation: true, license: true, reporting: true },
   },
   {
-    id: "mw14", wellName: "8Г-3", wellStatus: "conservation", wellStatusLabel: "На консервации",
+    id: "mw14", wellName: "8Г-3", dataType: "fact", wellStatus: "conservation", wellStatusLabel: "На консервации",
     wellType: "production", wellTypeLabel: "Добывающая",
     clusterId: "mc8", clusterName: "Куст 8Г", fieldId: "mf4", fieldName: "Центральное",
     company: "ПАО «ТюменьРесурс»", launchDate: "17.09.2019",
     oilCumTst: 44.1, oilRateToday: null, lastMeasured: "10.11.2025",
     docCoverage: { spatial: true, tsr: true, land: true, opo: true, ker: true, conservation: true, license: true, reporting: true },
   },
+
+  // ═══════════════════════════════════════════════════════════
+  // ПЛАНОВЫЕ ОБЪЕКТЫ 2026 (dataType: "plan", plannedYear: 2026)
+  // ═══════════════════════════════════════════════════════════
+
+  // --- ООО «НефтьГаз-Запад», Западно-Сибирское, плановый Куст 18Б (Q3 2026) ---
+  {
+    id: "pw1", wellName: "18Б-1", dataType: "plan", wellStatus: "producing", wellStatusLabel: "Плановый запуск",
+    wellType: "production", wellTypeLabel: "Добывающая",
+    clusterId: "pmc1", clusterName: "Куст 18Б", fieldId: "mf1", fieldName: "Западно-Сибирское",
+    company: "ООО «НефтьГаз-Запад»", launchDate: "",
+    plannedLaunchDate: "01.09.2026", plannedOilRate: 52.0, plannedOilYear: 8.2,
+    oilCumTst: 0, oilRateToday: null, lastMeasured: "",
+    docCoverage: { spatial: false, tsr: true, land: false, opo: false, ker: false, conservation: true, license: true, reporting: false },
+  },
+  {
+    id: "pw2", wellName: "18Б-2", dataType: "plan", wellStatus: "producing", wellStatusLabel: "Плановый запуск",
+    wellType: "production", wellTypeLabel: "Добывающая",
+    clusterId: "pmc1", clusterName: "Куст 18Б", fieldId: "mf1", fieldName: "Западно-Сибирское",
+    company: "ООО «НефтьГаз-Запад»", launchDate: "",
+    plannedLaunchDate: "15.09.2026", plannedOilRate: 48.0, plannedOilYear: 7.6,
+    oilCumTst: 0, oilRateToday: null, lastMeasured: "",
+    docCoverage: { spatial: false, tsr: true, land: false, opo: false, ker: false, conservation: true, license: true, reporting: false },
+  },
+  // --- АО «СеверДобыча», Арктическое, плановый Куст 52Д (Q4 2026) ---
+  {
+    id: "pw3", wellName: "52Д-1", dataType: "plan", wellStatus: "producing", wellStatusLabel: "Плановый запуск",
+    wellType: "production", wellTypeLabel: "Добывающая",
+    clusterId: "pmc2", clusterName: "Куст 52Д", fieldId: "mf3", fieldName: "Арктическое",
+    company: "АО «СеверДобыча»", launchDate: "",
+    plannedLaunchDate: "01.11.2026", plannedOilRate: 110.0, plannedOilYear: 14.3,
+    oilCumTst: 0, oilRateToday: null, lastMeasured: "",
+    docCoverage: { spatial: false, tsr: false, land: false, opo: false, ker: false, conservation: true, license: true, reporting: false },
+  },
+  {
+    id: "pw4", wellName: "52Д-2", dataType: "plan", wellStatus: "producing", wellStatusLabel: "Плановый запуск",
+    wellType: "production", wellTypeLabel: "Добывающая",
+    clusterId: "pmc2", clusterName: "Куст 52Д", fieldId: "mf3", fieldName: "Арктическое",
+    company: "АО «СеверДобыча»", launchDate: "",
+    plannedLaunchDate: "15.11.2026", plannedOilRate: 98.0, plannedOilYear: 12.8,
+    oilCumTst: 0, oilRateToday: null, lastMeasured: "",
+    docCoverage: { spatial: false, tsr: false, land: false, opo: false, ker: false, conservation: true, license: true, reporting: false },
+  },
+  // --- ПАО «ТюменьРесурс», Центральное, плановая скважина 8Г-5 (Q3 2026) ---
+  {
+    id: "pw5", wellName: "8Г-5", dataType: "plan", wellStatus: "producing", wellStatusLabel: "Плановый запуск",
+    wellType: "production", wellTypeLabel: "Добывающая",
+    clusterId: "mc8", clusterName: "Куст 8Г", fieldId: "mf4", fieldName: "Центральное",
+    company: "ПАО «ТюменьРесурс»", launchDate: "",
+    plannedLaunchDate: "01.08.2026", plannedOilRate: 38.0, plannedOilYear: 6.1,
+    oilCumTst: 0, oilRateToday: null, lastMeasured: "",
+    docCoverage: { spatial: false, tsr: true, land: true, opo: true, ker: true, conservation: true, license: true, reporting: false },
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // ПЛАНОВЫЕ ОБЪЕКТЫ 2027 (dataType: "plan", plannedYear: 2027)
+  // ═══════════════════════════════════════════════════════════
+
+  // --- ООО «НефтьГаз-Запад», Северное, плановый Куст 11Ж (Q1 2027) ---
+  {
+    id: "pw6", wellName: "11Ж-1", dataType: "plan", wellStatus: "producing", wellStatusLabel: "Плановый запуск",
+    wellType: "production", wellTypeLabel: "Добывающая",
+    clusterId: "pmc3", clusterName: "Куст 11Ж", fieldId: "mf2", fieldName: "Северное",
+    company: "ООО «НефтьГаз-Запад»", launchDate: "",
+    plannedLaunchDate: "01.03.2027", plannedOilRate: 64.0, plannedOilYear: 16.5,
+    oilCumTst: 0, oilRateToday: null, lastMeasured: "",
+    docCoverage: { spatial: false, tsr: false, land: false, opo: false, ker: false, conservation: true, license: false, reporting: false },
+  },
+  {
+    id: "pw7", wellName: "11Ж-2", dataType: "plan", wellStatus: "producing", wellStatusLabel: "Плановый запуск",
+    wellType: "production", wellTypeLabel: "Добывающая",
+    clusterId: "pmc3", clusterName: "Куст 11Ж", fieldId: "mf2", fieldName: "Северное",
+    company: "ООО «НефтьГаз-Запад»", launchDate: "",
+    plannedLaunchDate: "15.03.2027", plannedOilRate: 58.0, plannedOilYear: 15.1,
+    oilCumTst: 0, oilRateToday: null, lastMeasured: "",
+    docCoverage: { spatial: false, tsr: false, land: false, opo: false, ker: false, conservation: true, license: false, reporting: false },
+  },
+  {
+    id: "pw8", wellName: "11Ж-3", dataType: "plan", wellStatus: "producing", wellStatusLabel: "Плановый запуск",
+    wellType: "injection", wellTypeLabel: "Нагнетательная",
+    clusterId: "pmc3", clusterName: "Куст 11Ж", fieldId: "mf2", fieldName: "Северное",
+    company: "ООО «НефтьГаз-Запад»", launchDate: "",
+    plannedLaunchDate: "01.04.2027", plannedOilRate: null, plannedOilYear: 0,
+    oilCumTst: 0, oilRateToday: null, lastMeasured: "",
+    docCoverage: { spatial: false, tsr: false, land: false, opo: false, ker: false, conservation: true, license: false, reporting: false },
+  },
+  // --- АО «СеверДобыча», Арктическое (Блок Д), плановый Куст 67А (Q2 2027) ---
+  {
+    id: "pw9", wellName: "67А-1", dataType: "plan", wellStatus: "producing", wellStatusLabel: "Плановый запуск",
+    wellType: "production", wellTypeLabel: "Добывающая",
+    clusterId: "pmc4", clusterName: "Куст 67А", fieldId: "mf5", fieldName: "Арктическое (Блок Д)",
+    company: "АО «СеверДобыча»", launchDate: "",
+    plannedLaunchDate: "01.06.2027", plannedOilRate: 145.0, plannedOilYear: 22.4,
+    oilCumTst: 0, oilRateToday: null, lastMeasured: "",
+    docCoverage: { spatial: false, tsr: false, land: false, opo: false, ker: false, conservation: true, license: false, reporting: false },
+  },
+  {
+    id: "pw10", wellName: "67А-2", dataType: "plan", wellStatus: "producing", wellStatusLabel: "Плановый запуск",
+    wellType: "production", wellTypeLabel: "Добывающая",
+    clusterId: "pmc4", clusterName: "Куст 67А", fieldId: "mf5", fieldName: "Арктическое (Блок Д)",
+    company: "АО «СеверДобыча»", launchDate: "",
+    plannedLaunchDate: "15.06.2027", plannedOilRate: 138.0, plannedOilYear: 21.0,
+    oilCumTst: 0, oilRateToday: null, lastMeasured: "",
+    docCoverage: { spatial: false, tsr: false, land: false, opo: false, ker: false, conservation: true, license: false, reporting: false },
+  },
+  // --- ПАО «ТюменьРесурс», Центральное, плановый Куст 12В (Q3 2027) ---
+  {
+    id: "pw11", wellName: "12В-1", dataType: "plan", wellStatus: "producing", wellStatusLabel: "Плановый запуск",
+    wellType: "production", wellTypeLabel: "Добывающая",
+    clusterId: "pmc5", clusterName: "Куст 12В", fieldId: "mf4", fieldName: "Центральное",
+    company: "ПАО «ТюменьРесурс»", launchDate: "",
+    plannedLaunchDate: "01.09.2027", plannedOilRate: 44.0, plannedOilYear: 8.7,
+    oilCumTst: 0, oilRateToday: null, lastMeasured: "",
+    docCoverage: { spatial: false, tsr: false, land: false, opo: false, ker: false, conservation: true, license: true, reporting: false },
+  },
+  {
+    id: "pw12", wellName: "12В-2", dataType: "plan", wellStatus: "producing", wellStatusLabel: "Плановый запуск",
+    wellType: "production", wellTypeLabel: "Добывающая",
+    clusterId: "pmc5", clusterName: "Куст 12В", fieldId: "mf4", fieldName: "Центральное",
+    company: "ПАО «ТюменьРесурс»", launchDate: "",
+    plannedLaunchDate: "15.09.2027", plannedOilRate: 41.0, plannedOilYear: 8.1,
+    oilCumTst: 0, oilRateToday: null, lastMeasured: "",
+    docCoverage: { spatial: false, tsr: false, land: false, opo: false, ker: false, conservation: true, license: true, reporting: false },
+  },
 ]
 
 export const masterfileClusters: MasterfileCluster[] = [
-  { id: "mc1", clusterName: "Куст 14А", fieldId: "mf1", fieldName: "Западно-Сибирское", company: "ООО «НефтьГаз-Запад»", launchDate: "12.03.2021", wellCount: 3, producingCount: 3, idleCount: 0, totalOilRate: 102.0, docCoverage: { spatial: false, tsr: true, land: false, opo: true, ker: true, conservation: true, license: true, reporting: true } },
-  { id: "mc2", clusterName: "Куст 7Д", fieldId: "mf1", fieldName: "Западно-Сибирское", company: "ООО «НефтьГаз-Запад»", launchDate: "01.04.2019", wellCount: 2, producingCount: 0, idleCount: 2, totalOilRate: 0, docCoverage: { spatial: true, tsr: true, land: true, opo: true, ker: true, conservation: false, license: true, reporting: false } },
-  { id: "mc3", clusterName: "Куст 3А", fieldId: "mf2", fieldName: "Северное", company: "ООО «НефтьГаз-Запад»", launchDate: "10.02.2018", wellCount: 1, producingCount: 0, idleCount: 0, totalOilRate: 0, docCoverage: { spatial: true, tsr: false, land: true, opo: true, ker: true, conservation: true, license: true, reporting: true } },
-  { id: "mc4", clusterName: "Куст 8Е", fieldId: "mf2", fieldName: "Северное", company: "ООО «НефтьГаз-Запад»", launchDate: "05.04.2026", wellCount: 2, producingCount: 2, idleCount: 0, totalOilRate: 103.9, docCoverage: { spatial: false, tsr: false, land: false, opo: false, ker: false, conservation: true, license: false, reporting: false } },
-  { id: "mc5", clusterName: "Куст 22Б", fieldId: "mf3", fieldName: "Арктическое", company: "АО «СеверДобыча»", launchDate: "20.07.2020", wellCount: 2, producingCount: 2, idleCount: 0, totalOilRate: 139.3, docCoverage: { spatial: false, tsr: true, land: false, opo: true, ker: true, conservation: true, license: true, reporting: true } },
-  { id: "mc6", clusterName: "Куст 31В", fieldId: "mf3", fieldName: "Арктическое", company: "АО «СеверДобыча»", launchDate: "14.11.2021", wellCount: 2, producingCount: 2, idleCount: 0, totalOilRate: 61.0, docCoverage: { spatial: false, tsr: true, land: true, opo: true, ker: true, conservation: true, license: true, reporting: true } },
-  { id: "mc7", clusterName: "Куст 45Г", fieldId: "mf3", fieldName: "Арктическое", company: "АО «СеверДобыча»", launchDate: "01.03.2026", wellCount: 2, producingCount: 2, idleCount: 0, totalOilRate: 179.5, docCoverage: { spatial: false, tsr: false, land: false, opo: false, ker: false, conservation: true, license: true, reporting: false } },
-  { id: "mc8", clusterName: "Куст 8Г", fieldId: "mf4", fieldName: "Центральное", company: "ПАО «ТюменьРесурс»", launchDate: "03.06.2018", wellCount: 2, producingCount: 1, idleCount: 0, totalOilRate: 35.8, docCoverage: { spatial: true, tsr: true, land: true, opo: true, ker: true, conservation: true, license: true, reporting: true } },
+  // ─── ФАКТ ───────────────────────────────────────────────────────────────────
+  { id: "mc1", clusterName: "Куст 14А", dataType: "fact", fieldId: "mf1", fieldName: "Западно-Сибирское", company: "ООО «НефтьГаз-Запад»", launchDate: "12.03.2021", wellCount: 3, producingCount: 3, idleCount: 0, totalOilRate: 102.0, docCoverage: { spatial: false, tsr: true, land: false, opo: true, ker: true, conservation: true, license: true, reporting: true } },
+  { id: "mc2", clusterName: "Куст 7Д",  dataType: "fact", fieldId: "mf1", fieldName: "Западно-Сибирское", company: "ООО «НефтьГаз-Запад»", launchDate: "01.04.2019", wellCount: 2, producingCount: 0, idleCount: 2, totalOilRate: 0, docCoverage: { spatial: true, tsr: true, land: true, opo: true, ker: true, conservation: false, license: true, reporting: false } },
+  { id: "mc3", clusterName: "Куст 3А",  dataType: "fact", fieldId: "mf2", fieldName: "Северное",           company: "ООО «НефтьГаз-Запад»", launchDate: "10.02.2018", wellCount: 1, producingCount: 0, idleCount: 0, totalOilRate: 0, docCoverage: { spatial: true, tsr: false, land: true, opo: true, ker: true, conservation: true, license: true, reporting: true } },
+  { id: "mc4", clusterName: "Куст 8Е",  dataType: "fact", fieldId: "mf2", fieldName: "Северное",           company: "ООО «НефтьГаз-Запад»", launchDate: "05.04.2026", wellCount: 2, producingCount: 2, idleCount: 0, totalOilRate: 103.9, docCoverage: { spatial: false, tsr: false, land: false, opo: false, ker: false, conservation: true, license: false, reporting: false } },
+  { id: "mc5", clusterName: "Куст 22Б", dataType: "fact", fieldId: "mf3", fieldName: "Арктическое",        company: "АО «СеверДобыча»",     launchDate: "20.07.2020", wellCount: 2, producingCount: 2, idleCount: 0, totalOilRate: 139.3, docCoverage: { spatial: false, tsr: true, land: false, opo: true, ker: true, conservation: true, license: true, reporting: true } },
+  { id: "mc6", clusterName: "Куст 31В", dataType: "fact", fieldId: "mf3", fieldName: "Арктическое",        company: "АО «СеверДобыча»",     launchDate: "14.11.2021", wellCount: 2, producingCount: 2, idleCount: 0, totalOilRate: 61.0,  docCoverage: { spatial: false, tsr: true, land: true, opo: true, ker: true, conservation: true, license: true, reporting: true } },
+  { id: "mc7", clusterName: "Куст 45Г", dataType: "fact", fieldId: "mf3", fieldName: "Арктическое",        company: "АО «СеверДобыча»",     launchDate: "01.03.2026", wellCount: 2, producingCount: 2, idleCount: 0, totalOilRate: 179.5, docCoverage: { spatial: false, tsr: false, land: false, opo: false, ker: false, conservation: true, license: true, reporting: false } },
+  { id: "mc8", clusterName: "Куст 8Г",  dataType: "fact", fieldId: "mf4", fieldName: "Центральное",        company: "ПАО «ТюменьРесурс»",   launchDate: "03.06.2018", wellCount: 2, producingCount: 1, idleCount: 0, totalOilRate: 35.8,  docCoverage: { spatial: true, tsr: true, land: true, opo: true, ker: true, conservation: true, license: true, reporting: true } },
+
+  // ─── ПЛАН 2026 ──────────────────────────────────────────────────────────────
+  {
+    id: "pmc1", clusterName: "Куст 18Б", dataType: "plan", plannedYear: 2026,
+    fieldId: "mf1", fieldName: "Западно-Сибирское", company: "ООО «НефтьГаз-Запад»",
+    launchDate: "", plannedLaunchDate: "01.09.2026",
+    wellCount: 2, producingCount: 0, idleCount: 0,
+    totalOilRate: 0, plannedTotalOilRate: 100.0,
+    docCoverage: { spatial: false, tsr: true, land: false, opo: false, ker: false, conservation: true, license: true, reporting: false },
+  },
+  {
+    id: "pmc2", clusterName: "Куст 52Д", dataType: "plan", plannedYear: 2026,
+    fieldId: "mf3", fieldName: "Арктическое", company: "АО «СеверДобыча»",
+    launchDate: "", plannedLaunchDate: "01.11.2026",
+    wellCount: 2, producingCount: 0, idleCount: 0,
+    totalOilRate: 0, plannedTotalOilRate: 208.0,
+    docCoverage: { spatial: false, tsr: false, land: false, opo: false, ker: false, conservation: true, license: true, reporting: false },
+  },
+
+  // ─── ПЛАН 2027 ──────────────────────────────────────────────────────────────
+  {
+    id: "pmc3", clusterName: "Куст 11Ж", dataType: "plan", plannedYear: 2027,
+    fieldId: "mf2", fieldName: "Северное", company: "ООО «НефтьГаз-Запад»",
+    launchDate: "", plannedLaunchDate: "01.03.2027",
+    wellCount: 3, producingCount: 0, idleCount: 0,
+    totalOilRate: 0, plannedTotalOilRate: 122.0,
+    docCoverage: { spatial: false, tsr: false, land: false, opo: false, ker: false, conservation: true, license: false, reporting: false },
+  },
+  {
+    id: "pmc4", clusterName: "Куст 67А", dataType: "plan", plannedYear: 2027,
+    fieldId: "mf5", fieldName: "Арктическое (Блок Д)", company: "АО «СеверДобыча»",
+    launchDate: "", plannedLaunchDate: "01.06.2027",
+    wellCount: 2, producingCount: 0, idleCount: 0,
+    totalOilRate: 0, plannedTotalOilRate: 283.0,
+    docCoverage: { spatial: false, tsr: false, land: false, opo: false, ker: false, conservation: true, license: false, reporting: false },
+  },
+  {
+    id: "pmc5", clusterName: "Куст 12В", dataType: "plan", plannedYear: 2027,
+    fieldId: "mf4", fieldName: "Центральное", company: "ПАО «ТюменьРесурс»",
+    launchDate: "", plannedLaunchDate: "01.09.2027",
+    wellCount: 2, producingCount: 0, idleCount: 0,
+    totalOilRate: 0, plannedTotalOilRate: 85.0,
+    docCoverage: { spatial: false, tsr: false, land: false, opo: false, ker: false, conservation: true, license: true, reporting: false },
+  },
 ]
 
 // ── Дорожная карта ────────────────────────────────────────────────────────────
-// Для каждого модуля: какие шаги нужны, если объект не покрыт документами,
-// с ответственным подразделением и типовым сроком (рабочие дни).
+// Для каждого модуля: какие шаги нужны, если объект не покрыт документами.
+// plannedDeadline (опционально): для плановых объектов — крайний срок до запуска.
 
 export type RoadmapModule = keyof MasterfileWell["docCoverage"]
 
@@ -1273,7 +1467,7 @@ export const roadmapTemplates: Record<RoadmapModule, { title: string; steps: Roa
       { order: 1, action: "Разработать / актуализировать инвентаризацию источников выбросов по объекту", department: "Экологическая служба", daysToComplete: 20 },
       { order: 2, action: "Выполнить расчёт нормативов допустимых выбросов (НДВ / ВСВ)", department: "Экологическая служба / специализированная организация", daysToComplete: 30 },
       { order: 3, action: "Подготовить заявку на получение КЭР, приложить НДВ и ПНООЛР", department: "Экологическая служба", daysToComplete: 15 },
-      { order: 4, action: "Подать заявку в Росприроднадзор через ГИСП / личный кабинет", department: "Экологическая служба", daysToComplete: 5 },
+      { order: 4, action: "Подать заявку в Росприроднадзор через ГИСП / личный кабинет", department: "Экологическая служб��", daysToComplete: 5 },
       { order: 5, action: "Получить КЭР (рассмотрение Росприроднадзором)", department: "Экологическая служба", daysToComplete: 90 },
     ],
   },
@@ -1312,6 +1506,17 @@ export interface RoadmapItem {
   moduleTitle: string
   steps: (RoadmapStep & { targetDate: string })[]
   totalDays: number
+  /**
+   * Для плановых объектов — крайний срок завершения всех документов (= дата запуска).
+   * null для фактических объектов.
+   */
+  plannedDeadline: string | null
+  /**
+   * ok   — документы успевают оформить до запуска
+   * warn — меньше 30 р.д. до запуска
+   * critical — документы не успевают оформить до запуска
+   */
+  deadlineStatus: "ok" | "warn" | "critical" | null
 }
 
 function addWorkingDays(from: Date, days: number): string {
@@ -1325,14 +1530,36 @@ function addWorkingDays(from: Date, days: number): string {
   return d.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" })
 }
 
-export function buildRoadmapForWell(well: MasterfileWell): RoadmapItem[] {
-  const today = new Date(2026, 4, 23) // 23.05.2026
+function countWorkingDaysBetween(from: Date, to: Date): number {
+  let count = 0
+  let d = new Date(from)
+  while (d < to) {
+    d.setDate(d.getDate() + 1)
+    const dow = d.getDay()
+    if (dow !== 0 && dow !== 6) count++
+  }
+  return count
+}
+
+function parseDDMMYYYY(s: string): Date | null {
+  if (!s) return null
+  const [dd, mm, yyyy] = s.split(".")
+  if (!dd || !mm || !yyyy) return null
+  return new Date(Number(yyyy), Number(mm) - 1, Number(dd))
+}
+
+function buildRoadmapItems(
+  modules: [RoadmapModule, boolean][],
+  startDate: Date,
+  plannedLaunchDate: string | null,
+): RoadmapItem[] {
   const items: RoadmapItem[] = []
-  const modules = Object.entries(well.docCoverage) as [RoadmapModule, boolean][]
+  const launchDate = plannedLaunchDate ? parseDDMMYYYY(plannedLaunchDate) : null
+
   for (const [mod, covered] of modules) {
     if (covered) continue
     const tpl = roadmapTemplates[mod]
-    let cursor = today
+    let cursor = startDate
     const steps = tpl.steps.map((s) => {
       const targetDate = addWorkingDays(cursor, s.daysToComplete)
       cursor = new Date(cursor)
@@ -1340,30 +1567,68 @@ export function buildRoadmapForWell(well: MasterfileWell): RoadmapItem[] {
       return { ...s, targetDate }
     })
     const totalDays = tpl.steps.reduce((acc, s) => acc + s.daysToComplete, 0)
-    items.push({ module: mod, moduleTitle: tpl.title, steps, totalDays })
+
+    let plannedDeadline: string | null = null
+    let deadlineStatus: RoadmapItem["deadlineStatus"] = null
+
+    if (launchDate) {
+      plannedDeadline = launchDate.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" })
+      const workingDaysAvailable = countWorkingDaysBetween(startDate, launchDate)
+      const slack = workingDaysAvailable - totalDays
+      if (slack < 0) {
+        deadlineStatus = "critical"
+      } else if (slack < 30) {
+        deadlineStatus = "warn"
+      } else {
+        deadlineStatus = "ok"
+      }
+    }
+
+    items.push({ module: mod, moduleTitle: tpl.title, steps, totalDays, plannedDeadline, deadlineStatus })
   }
   return items
 }
 
+export function buildRoadmapForWell(well: MasterfileWell): RoadmapItem[] {
+  const today = new Date(2026, 4, 23) // 23.05.2026
+  const modules = Object.entries(well.docCoverage) as [RoadmapModule, boolean][]
+  const startDate = well.dataType === "plan" ? today : today
+  const plannedLaunch = well.dataType === "plan" ? (well.plannedLaunchDate ?? null) : null
+  return buildRoadmapItems(modules, startDate, plannedLaunch)
+}
+
 export function buildRoadmapForCluster(cluster: MasterfileCluster): RoadmapItem[] {
   const today = new Date(2026, 4, 23)
-  const items: RoadmapItem[] = []
   const modules = Object.entries(cluster.docCoverage) as [RoadmapModule, boolean][]
-  for (const [mod, covered] of modules) {
-    if (covered) continue
-    const tpl = roadmapTemplates[mod]
-    let cursor = today
-    const steps = tpl.steps.map((s) => {
-      const targetDate = addWorkingDays(cursor, s.daysToComplete)
-      cursor = new Date(cursor)
-      cursor.setDate(cursor.getDate() + s.daysToComplete)
-      return { ...s, targetDate }
-    })
-    const totalDays = tpl.steps.reduce((acc, s) => acc + s.daysToComplete, 0)
-    items.push({ module: mod, moduleTitle: tpl.title, steps, totalDays })
-  }
-  return items
+  const plannedLaunch = cluster.dataType === "plan" ? (cluster.plannedLaunchDate ?? null) : null
+  return buildRoadmapItems(modules, today, plannedLaunch)
 }
+
+// ── Хелперы ──────────────────────────────────────────────────────────────────
+
+/** Только фактические скважины */
+export const masterfileFactWells = masterfileWells.filter((w) => w.dataType === "fact")
+/** Только плановые скважины */
+export const masterfilePlanWells = masterfileWells.filter((w) => w.dataType === "plan")
+/** Плановые скважины 2026 */
+export const masterfilePlanWells2026 = masterfileWells.filter(
+  (w) => w.dataType === "plan" && w.plannedLaunchDate?.endsWith("2026"),
+)
+/** Плановые скважины 2027 */
+export const masterfilePlanWells2027 = masterfileWells.filter(
+  (w) => w.dataType === "plan" && w.plannedLaunchDate?.endsWith("2027"),
+)
+
+/** Только фактические кусты */
+export const masterfileFactClusters = masterfileClusters.filter((c) => c.dataType === "fact")
+/** Плановые кусты 2026 */
+export const masterfilePlanClusters2026 = masterfileClusters.filter(
+  (c) => c.dataType === "plan" && c.plannedYear === 2026,
+)
+/** Плановые кусты 2027 */
+export const masterfilePlanClusters2027 = masterfileClusters.filter(
+  (c) => c.dataType === "plan" && c.plannedYear === 2027,
+)
 
 // ── Список всех объектов с пропущенными документами ──────────────────────────
 export function getUncoveredObjects() {
@@ -1512,7 +1777,7 @@ export const checkModules: CheckModule[] = [
 
 export const recentAlerts = [
   { id: "1", severity: "critical" as ViolationSeverity, module: "ПРОСТ", text: "Забой скв. 14А-7 выходит за контур промышленных категорий запасов (В1+В2)", company: "ООО «НефтГаз-Запад»", field: "Западно-Сибирское", time: "сегодня, 07:45" },
-  { id: "2", severity: "critical" as ViolationSeverity, module: "КЭР", text: "Превышение нормативных выбросов на ФУ-3 в 2.4 раза. Объект: факельная установка", company: "АО «СеверДобыча»", field: "Арктическое", time: "вчера, 22:10" },
+  { id: "2", severity: "critical" as ViolationSeverity, module: "КЭР", text: "Превышение нормативных выбросов на ФУ-3 в 2.4 раза. Объект: факельная уст��новка", company: "АО «СеверДобыча»", field: "Арктическое", time: "вчера, 22:10" },
   { id: "3", severity: "critical" as ViolationSeverity, module: "ОПО", text: "Отсутствует разрешение на эксплуатацию ОПО «ДКС-2». Документ истёк 01.04.2026", company: "ООО «НефтьГаз-Запад»", field: "Западно-Сибирское", time: "вчера, 14:30" },
   { id: "4", severity: "warning" as ViolationSeverity, module: "ТСР", text: "Фактическая добыча нефти превышает плановую по ТСР на 18%: 285 тыс.т/год vs 241 тыс.т/год", company: "АО «СеверДобыча»", field: "Арктическое", time: "22.05.2026" },
   { id: "5", severity: "warning" as ViolationSeverity, module: "ЗЕМЛЯ", text: "Объект обустройства «КП-14» расположен за пределами границ договора аренды №47/2021", company: "ООО «НефтьГаз-Запад»", field: "Западно-Сибирское", time: "21.05.2026" },
