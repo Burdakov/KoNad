@@ -58,7 +58,7 @@ export default function OpoPage() {
         ].map((s) => (
           <div key={s.label} className="rounded-md border border-border bg-card px-4 py-3">
             <div className="flex items-center gap-2 mb-1">
-              {"severity" in s && <StatusDot severity={s.severity} />}
+              <StatusDot severity={s.severity} />
               <span className="text-[11px] text-muted-foreground">{s.label}</span>
             </div>
             <span className="text-2xl font-bold font-mono text-foreground">{s.value}</span>
