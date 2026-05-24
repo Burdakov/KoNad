@@ -3,56 +3,36 @@
 import {
   LayoutDashboard,
   Map,
-  FileCheck2,
-  Layers3,
-  BookOpen,
-  Settings,
+  TrendingUp,
+  LandPlot,
+  Flame,
+  Leaf,
+  Drill,
+  ScrollText,
+  FileText,
   ChevronDown,
   Bell,
   RefreshCw,
   ShieldAlert,
 } from "lucide-react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 
 const navItems = [
-  {
-    label: "Главный дашборд",
-    href: "/",
-    icon: LayoutDashboard,
-    active: true,
-  },
-  {
-    label: "Пространственные проверки",
-    href: "/spatial",
-    icon: Map,
-    badge: 6,
-  },
-  {
-    label: "ТСР / Госплан",
-    href: "/tsr",
-    icon: FileCheck2,
-    badge: 3,
-  },
-  {
-    label: "Документооборот",
-    href: "/documents",
-    icon: BookOpen,
-    badge: 8,
-  },
-  {
-    label: "Фонд скважин",
-    href: "/wells",
-    icon: Layers3,
-  },
-  {
-    label: "Настройки",
-    href: "/settings",
-    icon: Settings,
-  },
+  { label: "Дашборд", href: "/", icon: LayoutDashboard },
+  { label: "Пространственные", href: "/spatial", icon: Map, badge: 6 },
+  { label: "ТСР / Госплан", href: "/tsr", icon: TrendingUp, badge: 3 },
+  { label: "Земельные отводы", href: "/land", icon: LandPlot, badge: 2 },
+  { label: "ОПО", href: "/opo", icon: Flame, badge: 2 },
+  { label: "КЭР", href: "/ker", icon: Leaf, badge: 4 },
+  { label: "Консервация", href: "/wells", icon: Drill, badge: 2 },
+  { label: "Лицензирование", href: "/license", icon: FileText, badge: 2 },
+  { label: "Отчётность", href: "/reporting", icon: ScrollText, badge: 2 },
 ]
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">
       {/* Sidebar */}
@@ -78,7 +58,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 href={item.href}
                 className={cn(
                   "flex items-center gap-2.5 px-2.5 py-2 rounded text-sm transition-colors group",
-                  item.active
+                  pathname === item.href
                     ? "bg-sidebar-accent text-sidebar-foreground font-medium"
                     : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
                 )}
