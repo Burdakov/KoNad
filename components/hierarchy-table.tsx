@@ -39,6 +39,7 @@ const VIOLATION_COLS = [
   { key: "conservation", label: "КОНС" },
   { key: "license", label: "ЛИЦ" },
   { key: "reporting", label: "ОТЧЁТ" },
+  { key: "hydro", label: "ГИДРО" },
 ] as const
 
 function ViolationCell({ value }: { value: number }) {

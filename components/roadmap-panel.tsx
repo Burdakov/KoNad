@@ -13,6 +13,7 @@ const MODULE_COLORS: Record<RoadmapModule, string> = {
   conservation: "bg-[oklch(0.72_0.18_70/0.15)]  text-[oklch(0.82_0.15_70)]  border-[oklch(0.72_0.18_70/0.3)]",
   license:      "bg-[oklch(0.65_0.15_210/0.15)] text-[oklch(0.65_0.15_210)] border-[oklch(0.65_0.15_210/0.3)]",
   reporting:    "bg-[oklch(0.7_0.12_280/0.15)]  text-[oklch(0.7_0.12_280)]  border-[oklch(0.7_0.12_280/0.3)]",
+  hydro:        "bg-[oklch(0.55_0.18_220/0.15)] text-[oklch(0.55_0.18_220)] border-[oklch(0.55_0.18_220/0.3)]",
 }
 
 const MODULE_LABELS: Record<RoadmapModule, string> = {
@@ -24,6 +25,7 @@ const MODULE_LABELS: Record<RoadmapModule, string> = {
   conservation: "КОНС",
   license:      "ЛИЦ",
   reporting:    "ОТЧЁТ",
+  hydro:        "ГИДРО",
 }
 
 const DEADLINE_STYLES: Record<"ok" | "warn" | "critical", string> = {

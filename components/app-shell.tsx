@@ -15,6 +15,7 @@ import {
   RefreshCw,
   ShieldAlert,
   Database,
+  Droplets,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -31,6 +32,7 @@ const navItems = [
   { label: "Консервация", href: "/wells", icon: Drill, badge: 2 },
   { label: "Лицензирование", href: "/license", icon: FileText, badge: 2 },
   { label: "Отчётность", href: "/reporting", icon: ScrollText, badge: 2 },
+  { label: "Гидрогеология", href: "/hydro", icon: Droplets, badge: 4 },
 ]
 
 export function AppShell({ children }: { children: React.ReactNode }) {

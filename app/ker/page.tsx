@@ -3,9 +3,10 @@
 import { AppShell } from "@/components/app-shell"
 import { StatusBadge, StatusDot } from "@/components/status-badge"
 import { MasterfileCrossCheck } from "@/components/masterfile-cross-check"
+import { ProductionChart } from "@/components/production-chart"
 import { kerEmissionSources } from "@/lib/mock-data"
 import { useState } from "react"
-import { Leaf, Wind, AlertTriangle, Database } from "lucide-react"
+import { Leaf, Wind, AlertTriangle, Database, BarChart3 } from "lucide-react"
 
 function ExceedBar({ limit, fact, projected }: { limit: number; fact: number; projected: number }) {
   const max = Math.max(limit * 1.5, projected * 1.1)
@@ -41,7 +42,7 @@ function ExceedBar({ limit, fact, projected }: { limit: number; fact: number; pr
 }
 
 export default function KerPage() {
-  const [tab, setTab] = useState<"main" | "cross">("main")
+  const [tab, setTab] = useState<"main" | "chart" | "cross">("main")
   const [filter, setFilter] = useState<"all" | "critical" | "warning" | "ok">("all")
   const [typeFilter, setTypeFilter] = useState<"all" | "flare" | "stationary">("all")
 
@@ -71,8 +72,10 @@ export default function KerPage() {
       {/* Tabs */}
       <div className="flex gap-1 mb-5 border-b border-border">
         <button onClick={() => setTab("main")} className={`px-3 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${tab === "main" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>Источники выбросов</button>
+        <button onClick={() => setTab("chart")} className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${tab === "chart" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}><BarChart3 className="size-3" /> График по месяцам</button>
         <button onClick={() => setTab("cross")} className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${tab === "cross" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}><Database className="size-3" /> Сверка с мастерфайлом</button>
       </div>
+      {tab === "chart" && <ProductionChart />}
       {tab === "cross" && <MasterfileCrossCheck module="ker" />}
       {tab === "main" && (<>
 

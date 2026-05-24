@@ -3,9 +3,10 @@
 import { AppShell } from "@/components/app-shell"
 import { StatusBadge, StatusDot } from "@/components/status-badge"
 import { MasterfileCrossCheck } from "@/components/masterfile-cross-check"
+import { ProductionChart } from "@/components/production-chart"
 import { tsrIndicators, tsrResearchPrograms } from "@/lib/mock-data"
 import { useState } from "react"
-import { TrendingUp, TrendingDown, Minus, FlaskConical, Database } from "lucide-react"
+import { TrendingUp, TrendingDown, Minus, FlaskConical, Database, BarChart3 } from "lucide-react"
 
 function DeviationCell({ dev, controlled }: { dev: number; controlled: boolean }) {
   const abs = Math.abs(dev)
@@ -32,7 +33,7 @@ function DeviationCell({ dev, controlled }: { dev: number; controlled: boolean }
 }
 
 export default function TsrPage() {
-  const [tab, setTab] = useState<"main" | "cross">("main")
+  const [tab, setTab] = useState<"main" | "chart" | "cross">("main")
   const [innerTab, setInnerTab] = useState<"indicators" | "research">("indicators")
 
   const criticalCount = tsrIndicators.filter((i) => i.status === "critical").length
@@ -55,11 +56,15 @@ export default function TsrPage() {
         <button onClick={() => setTab("main")} className={`px-3 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${tab === "main" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
           Показатели
         </button>
+        <button onClick={() => setTab("chart")} className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${tab === "chart" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+          <BarChart3 className="size-3" /> График по месяцам
+        </button>
         <button onClick={() => setTab("cross")} className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${tab === "cross" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
           <Database className="size-3" /> Сверка с мастерфайлом
         </button>
       </div>
 
+      {tab === "chart" && <ProductionChart />}
       {tab === "cross" && <MasterfileCrossCheck module="tsr" />}
       {tab === "main" && (<>
 
