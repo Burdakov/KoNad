@@ -3,9 +3,10 @@
 import { AppShell } from "@/components/app-shell"
 import { StatusBadge, StatusDot } from "@/components/status-badge"
 import { MasterfileCrossCheck } from "@/components/masterfile-cross-check"
+import { SpatialMap } from "@/components/spatial-map"
 import { spatialChecks, type SpatialCheck } from "@/lib/mock-data"
 import { useState } from "react"
-import { MapPin, Database } from "lucide-react"
+import { MapPin, Database, Map } from "lucide-react"
 
 const checkTypeColors: Record<SpatialCheck["checkType"], string> = {
   reserves: "text-[oklch(0.65_0.15_210)] bg-[oklch(0.65_0.15_210/0.12)]",
@@ -26,7 +27,7 @@ const summaryStats = [
 ]
 
 export default function SpatialPage() {
-  const [tab, setTab] = useState<"main" | "cross">("main")
+  const [tab, setTab] = useState<"map" | "main" | "cross">("map")
   const [filter, setFilter] = useState<"all" | SpatialCheck["status"]>("all")
   const [typeFilter, setTypeFilter] = useState<"all" | SpatialCheck["checkType"]>("all")
 
@@ -49,6 +50,9 @@ export default function SpatialPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 mb-5 border-b border-border">
+        <button onClick={() => setTab("map")} className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${tab === "map" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+          <Map className="size-3" /> Карта
+        </button>
         <button onClick={() => setTab("main")} className={`px-3 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${tab === "main" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
           Нарушения
         </button>
@@ -57,6 +61,7 @@ export default function SpatialPage() {
         </button>
       </div>
 
+      {tab === "map" && <SpatialMap />}
       {tab === "cross" && <MasterfileCrossCheck module="spatial" />}
       {tab === "main" && (<>
 

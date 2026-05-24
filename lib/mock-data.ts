@@ -148,6 +148,253 @@ export const spatialChecks: SpatialCheck[] = [
   },
 ]
 
+// ──────────────────────────────────────────────────────────────────────────────
+// ПРОСТРАНСТВЕННАЯ КАРТА: контуры запасов, горные отводы, плановые скважины
+// Координаты — условные (lon/lat в системе WGS-84 для Западной Сибири).
+// ──────────────────────────────────────────────────────────────────────────────
+
+/** Контур категории запасов */
+export interface ReserveContour {
+  id: string
+  fieldId: string
+  fieldName: string
+  company: string
+  /** В1, В2, В1+В2, С1, С2 */
+  category: string
+  /** Цвет заливки (oklch) */
+  color: string
+  /** Полигон: массив [lon, lat] */
+  polygon: [number, number][]
+}
+
+/** Горный отвод */
+export interface MiningAllotment {
+  id: string
+  fieldId: string
+  fieldName: string
+  company: string
+  docNumber: string
+  polygon: [number, number][]
+  status: "active" | "expired" | "pending"
+}
+
+/** Скважина на карте */
+export interface MapWell {
+  id: string
+  wellName: string
+  lon: number
+  lat: number
+  /** fact = фактическая; plan = плановый запуск */
+  dataType: "fact" | "plan"
+  /** true = входит в план добычи мастерфайла */
+  inProductionPlan: boolean
+  /** null = нет нарушений */
+  violation: "critical" | "warning" | null
+  company: string
+  fieldId: string
+  plannedLaunchDate?: string
+  oilRateToday?: number | null
+}
+
+// ── Контуры запасов ───────────────────────────────────────────────────────────
+export const reserveContours: ReserveContour[] = [
+  // === Западно-Сибирское (ООО «НефтьГаз-Запад») ===
+  {
+    id: "rc1", fieldId: "mf1", fieldName: "Западно-Сибирское",
+    company: "ООО «НефтьГаз-Запад»",
+    category: "В1+В2",
+    color: "oklch(0.62_0.18_145)",
+    polygon: [
+      [68.210, 61.870], [68.255, 61.870], [68.260, 61.895],
+      [68.250, 61.905], [68.220, 61.903], [68.210, 61.890],
+    ],
+  },
+  {
+    id: "rc2", fieldId: "mf1", fieldName: "Западно-Сибирское",
+    company: "ООО «НефтьГаз-Запад»",
+    category: "В1",
+    color: "oklch(0.72_0.18_145)",
+    polygon: [
+      [68.215, 61.875], [68.248, 61.875], [68.252, 61.893],
+      [68.242, 61.900], [68.222, 61.898], [68.215, 61.887],
+    ],
+  },
+  {
+    id: "rc3", fieldId: "mf1", fieldName: "Западно-Сибирское",
+    company: "ООО «НефтьГаз-Запад»",
+    category: "С1",
+    color: "oklch(0.65_0.15_210)",
+    polygon: [
+      [68.255, 61.870], [68.285, 61.870], [68.290, 61.895],
+      [68.270, 61.905], [68.255, 61.895],
+    ],
+  },
+  // === Северное (ООО «НефтьГаз-Запад») ===
+  {
+    id: "rc4", fieldId: "mf2", fieldName: "Северное",
+    company: "ООО «НефтьГаз-Запад»",
+    category: "В1+В2",
+    color: "oklch(0.62_0.18_145)",
+    polygon: [
+      [70.300, 63.420], [70.360, 63.420], [70.365, 63.455],
+      [70.340, 63.462], [70.305, 63.455], [70.300, 63.435],
+    ],
+  },
+  {
+    id: "rc5", fieldId: "mf2", fieldName: "Северное",
+    company: "ООО «НефтьГаз-Запад»",
+    category: "С1",
+    color: "oklch(0.65_0.15_210)",
+    polygon: [
+      [70.360, 63.420], [70.395, 63.418], [70.400, 63.450],
+      [70.370, 63.458], [70.360, 63.445],
+    ],
+  },
+  // === Арктическое (АО «СеверДобыча») ===
+  {
+    id: "rc6", fieldId: "mf3", fieldName: "Арктическое",
+    company: "АО «СеверДобыча»",
+    category: "В1+В2",
+    color: "oklch(0.62_0.18_145)",
+    polygon: [
+      [72.090, 65.435], [72.150, 65.432], [72.158, 65.465],
+      [72.130, 65.472], [72.092, 65.465], [72.088, 65.448],
+    ],
+  },
+  {
+    id: "rc7", fieldId: "mf3", fieldName: "Арктическое",
+    company: "АО «СеверДобыча»",
+    category: "С1",
+    color: "oklch(0.65_0.15_210)",
+    polygon: [
+      [72.150, 65.432], [72.180, 65.430], [72.185, 65.462],
+      [72.160, 65.470], [72.150, 65.458],
+    ],
+  },
+  // === Центральное (ПАО «ТюменьРесурс») ===
+  {
+    id: "rc8", fieldId: "mf4", fieldName: "Центральное",
+    company: "ПАО «ТюменьРесурс»",
+    category: "В1+В2",
+    color: "oklch(0.62_0.18_145)",
+    polygon: [
+      [68.960, 60.308], [69.010, 60.308], [69.015, 60.338],
+      [68.995, 60.345], [68.962, 60.338], [68.958, 60.320],
+    ],
+  },
+  // === Арктическое Блок Д (АО «СеверДобыча», план 2027) ===
+  {
+    id: "rc9", fieldId: "mf5", fieldName: "Арктическое (Блок Д)",
+    company: "АО «СеверДобыча»",
+    category: "С1",
+    color: "oklch(0.65_0.15_210)",
+    polygon: [
+      [72.200, 65.465], [72.240, 65.462], [72.245, 65.488],
+      [72.215, 65.495], [72.198, 65.480],
+    ],
+  },
+]
+
+// ── Горные отводы ─────────────────────────────────────────────────────────────
+export const miningAllotments: MiningAllotment[] = [
+  {
+    id: "ma1", fieldId: "mf1", fieldName: "Западно-Сибирское",
+    company: "ООО «НефтьГаз-Запад»",
+    docNumber: "ПРГР-ЗСМ-2022",
+    status: "active",
+    polygon: [
+      [68.205, 61.865], [68.295, 61.865], [68.300, 61.910],
+      [68.255, 61.918], [68.208, 61.908], [68.202, 61.882],
+    ],
+  },
+  {
+    id: "ma2", fieldId: "mf2", fieldName: "Северное",
+    company: "ООО «НефтьГаз-Запад»",
+    docNumber: "ПРГР-СЕВ-2021",
+    status: "active",
+    polygon: [
+      [70.293, 63.412], [70.408, 63.410], [70.412, 63.468],
+      [70.350, 63.475], [70.295, 63.462], [70.290, 63.430],
+    ],
+  },
+  {
+    id: "ma3", fieldId: "mf3", fieldName: "Арктическое",
+    company: "АО «СеверДобыча»",
+    docNumber: "ПРГР-АРК-2024",
+    status: "active",
+    polygon: [
+      [72.082, 65.428], [72.192, 65.425], [72.195, 65.478],
+      [72.140, 65.482], [72.085, 65.475], [72.080, 65.450],
+    ],
+  },
+  {
+    id: "ma4", fieldId: "mf4", fieldName: "Центральное",
+    company: "ПАО «ТюменьРесурс»",
+    docNumber: "ПРГР-ЦЕН-2023",
+    status: "active",
+    polygon: [
+      [68.950, 60.300], [69.025, 60.300], [69.030, 60.352],
+      [69.000, 60.358], [68.952, 60.348], [68.948, 60.318],
+    ],
+  },
+  // Блок Д — горный отвод в стадии оформления (план 2027)
+  {
+    id: "ma5", fieldId: "mf5", fieldName: "Арктическое (Блок Д)",
+    company: "АО «СеверДобыча»",
+    docNumber: "ПРГР-АРК-Д-2026 (проект)",
+    status: "pending",
+    polygon: [
+      [72.192, 65.458], [72.255, 65.455], [72.258, 65.500],
+      [72.220, 65.505], [72.190, 65.492],
+    ],
+  },
+]
+
+// ── Скважины на карте (объединяют факт + план + нарушения) ────────────────────
+export const mapWells: MapWell[] = [
+  // ─── Западно-Сибирское (факт) ───────────────────────────────────────────────
+  { id: "mwp1",  wellName: "14А-7",  lon: 68.2341, lat: 61.8872, dataType: "fact", inProductionPlan: true,  violation: "critical", company: "ООО «НефтьГаз-Запад»", fieldId: "mf1", oilRateToday: 42.1 },
+  { id: "mwp2",  wellName: "14А-12", lon: 68.2389, lat: 61.8894, dataType: "fact", inProductionPlan: true,  violation: "critical", company: "ООО «НефтьГаз-Запад»", fieldId: "mf1", oilRateToday: 28.5 },
+  { id: "mwp3",  wellName: "14А-15", lon: 68.2420, lat: 61.8850, dataType: "fact", inProductionPlan: true,  violation: null,       company: "ООО «НефтьГаз-Запад»", fieldId: "mf1", oilRateToday: 31.4 },
+  { id: "mwp4",  wellName: "7Д-4",   lon: 68.2600, lat: 61.8760, dataType: "fact", inProductionPlan: false, violation: null,       company: "ООО «НефтьГаз-Запад»", fieldId: "mf1", oilRateToday: null },
+  { id: "mwp5",  wellName: "7Д-9",   lon: 68.2630, lat: 61.8788, dataType: "fact", inProductionPlan: false, violation: null,       company: "ООО «НефтьГаз-Запад»", fieldId: "mf1", oilRateToday: null },
+  { id: "mwp6",  wellName: "КП-14",  lon: 68.2250, lat: 61.8801, dataType: "fact", inProductionPlan: false, violation: "warning",  company: "ООО «НефтьГаз-Запад»", fieldId: "mf1", oilRateToday: null },
+  // Плановый куст 18Б (2026)
+  { id: "mwp7",  wellName: "18Б-1",  lon: 68.2750, lat: 61.8920, dataType: "plan", inProductionPlan: true,  violation: null,       company: "ООО «НефтьГаз-Запад»", fieldId: "mf1", plannedLaunchDate: "01.09.2026" },
+  { id: "mwp8",  wellName: "18Б-2",  lon: 68.2770, lat: 61.8938, dataType: "plan", inProductionPlan: true,  violation: null,       company: "ООО «НефтьГаз-Запад»", fieldId: "mf1", plannedLaunchDate: "15.09.2026" },
+
+  // ─── Северное (факт + план) ──────────────────────────────────────────────────
+  { id: "mwp9",  wellName: "3А-17",  lon: 70.3120, lat: 63.4280, dataType: "fact", inProductionPlan: false, violation: null,       company: "ООО «НефтьГаз-Запад»", fieldId: "mf2", oilRateToday: null },
+  { id: "mwp10", wellName: "8Е-1",   lon: 70.3350, lat: 63.4420, dataType: "fact", inProductionPlan: true,  violation: null,       company: "ООО «НефтьГаз-Запад»", fieldId: "mf2", oilRateToday: 55.2 },
+  { id: "mwp11", wellName: "8Е-2",   lon: 70.3380, lat: 63.4440, dataType: "fact", inProductionPlan: true,  violation: null,       company: "ООО «НефтьГаз-Запад»", fieldId: "mf2", oilRateToday: 48.7 },
+  // Плановый куст 11Ж (2027)
+  { id: "mwp12", wellName: "11Ж-1",  lon: 70.3750, lat: 63.4380, dataType: "plan", inProductionPlan: true,  violation: null,       company: "ООО «НефтьГаз-Запад»", fieldId: "mf2", plannedLaunchDate: "01.03.2027" },
+  { id: "mwp13", wellName: "11Ж-2",  lon: 70.3780, lat: 63.4400, dataType: "plan", inProductionPlan: true,  violation: null,       company: "ООО «НефтьГаз-Запад»", fieldId: "mf2", plannedLaunchDate: "15.03.2027" },
+  { id: "mwp14", wellName: "11Ж-3",  lon: 70.3800, lat: 63.4360, dataType: "plan", inProductionPlan: true,  violation: null,       company: "ООО «НефтьГаз-Запад»", fieldId: "mf2", plannedLaunchDate: "01.04.2027" },
+
+  // ─── Арктическое (факт + план) ──────────────────────────────────────────────
+  { id: "mwp15", wellName: "22Б-3",  lon: 72.1120, lat: 65.4430, dataType: "fact", inProductionPlan: true,  violation: "warning",  company: "АО «СеверДобыча»",     fieldId: "mf3", oilRateToday: 78.3 },
+  { id: "mwp16", wellName: "31В-8",  lon: 72.1290, lat: 65.4512, dataType: "fact", inProductionPlan: true,  violation: "warning",  company: "АО «СеверДобыча»",     fieldId: "mf3", oilRateToday: 61.0 },
+  { id: "mwp17", wellName: "45Г-1",  lon: 72.1050, lat: 65.4380, dataType: "fact", inProductionPlan: true,  violation: null,       company: "АО «СеверДобыча»",     fieldId: "mf3", oilRateToday: 92.4 },
+  { id: "mwp18", wellName: "45Г-2",  lon: 72.1080, lat: 65.4400, dataType: "fact", inProductionPlan: true,  violation: null,       company: "АО «СеверДобыча»",     fieldId: "mf3", oilRateToday: 87.1 },
+  // Плановый куст 52Д (2026)
+  { id: "mwp19", wellName: "52Д-1",  lon: 72.1580, lat: 65.4480, dataType: "plan", inProductionPlan: true,  violation: null,       company: "АО «СеверДобыча»",     fieldId: "mf3", plannedLaunchDate: "01.11.2026" },
+  { id: "mwp20", wellName: "52Д-2",  lon: 72.1610, lat: 65.4500, dataType: "plan", inProductionPlan: true,  violation: null,       company: "АО «СеверДобыча»",     fieldId: "mf3", plannedLaunchDate: "15.11.2026" },
+
+  // ─── Центральное (факт) ─────────────────────────────────────────────────────
+  { id: "mwp21", wellName: "8Г-1",   lon: 68.9812, lat: 60.3210, dataType: "fact", inProductionPlan: true,  violation: null,       company: "ПАО «ТюменьРесурс»",   fieldId: "mf4", oilRateToday: 35.8 },
+  { id: "mwp22", wellName: "8Г-3",   lon: 68.9840, lat: 60.3230, dataType: "fact", inProductionPlan: false, violation: null,       company: "ПАО «ТюменьРесурс»",   fieldId: "mf4", oilRateToday: null },
+  // Плановая скважина 8Г-5 (2026)
+  { id: "mwp23", wellName: "8Г-5",   lon: 68.9870, lat: 60.3250, dataType: "plan", inProductionPlan: true,  violation: null,       company: "ПАО «ТюменьРесурс»",   fieldId: "mf4", plannedLaunchDate: "01.08.2026" },
+  // Плановый куст 12В (2027)
+  { id: "mwp24", wellName: "12В-1",  lon: 68.9950, lat: 60.3300, dataType: "plan", inProductionPlan: true,  violation: null,       company: "ПАО «ТюменьРесурс»",   fieldId: "mf4", plannedLaunchDate: "01.09.2027" },
+  { id: "mwp25", wellName: "12В-2",  lon: 68.9975, lat: 60.3320, dataType: "plan", inProductionPlan: true,  violation: null,       company: "ПАО «ТюменьРесурс»",   fieldId: "mf4", plannedLaunchDate: "15.09.2027" },
+
+  // ─── Арктическое Блок Д (план 2027) ─────────────────────────────────────────
+  { id: "mwp26", wellName: "67А-1",  lon: 72.2180, lat: 65.4720, dataType: "plan", inProductionPlan: true,  violation: null,       company: "АО «СеверДобыча»",     fieldId: "mf5", plannedLaunchDate: "01.06.2027" },
+  { id: "mwp27", wellName: "67А-2",  lon: 72.2200, lat: 65.4740, dataType: "plan", inProductionPlan: true,  violation: null,       company: "АО «СеверДобыча»",     fieldId: "mf5", plannedLaunchDate: "15.06.2027" },
+]
+
 // ---------- TSR MODULE ----------
 
 export interface TsrIndicator {
@@ -514,7 +761,7 @@ export const opoObjects: OpoObject[] = [
     validTo: "30.06.2026",
     daysLeft: 38,
     status: "warning",
-    comment: "Срок истекает через 38 дней",
+    comment: "Срок истекает чере�� 38 дней",
   },
   {
     id: "opo4",
@@ -1410,7 +1657,7 @@ export const masterfileClusters: MasterfileCluster[] = [
 
 // ── Дорожная карта ────────────────────────────────────────────────────────────
 // Для каждого модуля: какие шаги нужны, если объект не покрыт документами.
-// plannedDeadline (опциональн��): для плановых объектов — крайний срок до запуска.
+// plannedDeadline (опциональн��): для плановы�� объектов — крайний срок до запуска.
 
 export type RoadmapModule = keyof MasterfileWell["docCoverage"]
 
