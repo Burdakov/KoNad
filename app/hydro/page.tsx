@@ -53,11 +53,12 @@ const STATUS_STYLE = {
 }
 
 function StatusPill({ status }: { status: HydroDocument["status"] }) {
-  const labels = { ok: "Актуален", warning: "Внимание", critical: "Нарушение" }
+  const safeStatus = (status === "ok" || status === "warning" || status === "critical") ? status : "ok"
+  const labels: Record<string, string> = { ok: "Актуален", warning: "Внимание", critical: "Нарушение" }
   return (
-    <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${STATUS_STYLE[status]}`}>
-      {status === "ok" ? <CheckCircle2 className="size-2.5" /> : <AlertTriangle className="size-2.5" />}
-      {labels[status]}
+    <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${STATUS_STYLE[safeStatus]}`}>
+      {safeStatus === "ok" ? <CheckCircle2 className="size-2.5" /> : <AlertTriangle className="size-2.5" />}
+      {labels[safeStatus]}
     </span>
   )
 }
