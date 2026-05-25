@@ -169,25 +169,35 @@ function GanttRowBar({
 }
 
 // ─── Object group header ──────────────────────────────────────────────────────
-function ObjectGroupHeader({ label, company, status, daysUntilLaunch, launchDate }: {
+function ObjectGroupHeader({ label, company, status, daysUntilLaunch, launchDate, timelineWidth }: {
   label: string
   company: string
   status: "ok" | "warn" | "critical"
   daysUntilLaunch: number
   launchDate: string
+  timelineWidth: number
 }) {
   return (
     <div
-      className="flex items-center gap-2 px-3 border-b border-border sticky top-0 z-10"
+      className="flex items-stretch border-b border-border/80 sticky top-0 z-10"
       style={{ height: 32, background: STATUS_BG[status] ?? "#f9fafb" }}
     >
-      <StatusIcon status={status} />
-      <span className="text-xs font-semibold text-foreground">{label}</span>
-      <span className="text-[10px] text-muted-foreground">·</span>
-      <span className="text-[10px] text-muted-foreground truncate">{company}</span>
-      <span className="ml-auto text-[10px] font-mono" style={{ color: STATUS_COLOR[status] }}>
-        {daysUntilLaunch >= 0 ? `${daysUntilLaunch} дн. до запуска (${launchDate})` : `Просрочен (${launchDate})`}
-      </span>
+      {/* Label column portion */}
+      <div
+        className="flex items-center gap-2 px-3 flex-shrink-0 border-r border-border/60"
+        style={{ width: LABEL_COL_W }}
+      >
+        <StatusIcon status={status} />
+        <span className="text-xs font-semibold text-foreground truncate">{label}</span>
+        <span className="text-[10px] text-muted-foreground hidden sm:block">·</span>
+        <span className="text-[10px] text-muted-foreground truncate hidden sm:block">{company}</span>
+      </div>
+      {/* Timeline portion */}
+      <div className="flex items-center flex-1 px-3" style={{ width: timelineWidth }}>
+        <span className="ml-auto text-[10px] font-mono" style={{ color: STATUS_COLOR[status] }}>
+          {daysUntilLaunch >= 0 ? `${daysUntilLaunch} дн. до запуска (${launchDate})` : `Просрочен (${launchDate})`}
+        </span>
+      </div>
     </div>
   )
 }
@@ -267,15 +277,14 @@ export function GanttChart({ rows }: GanttChartProps) {
             return (
               <div key={label} className="relative">
                 {/* Object header */}
-                <div className="flex sticky left-0" style={{ minWidth: totalWidth }}>
-                  <ObjectGroupHeader
-                    label={label}
-                    company={firstRow.company}
-                    status={worstStatus}
-                    daysUntilLaunch={firstRow.daysUntilLaunch}
-                    launchDate={firstRow.plannedLaunchDate}
-                  />
-                </div>
+                <ObjectGroupHeader
+                  label={label}
+                  company={firstRow.company}
+                  status={worstStatus}
+                  daysUntilLaunch={firstRow.daysUntilLaunch}
+                  launchDate={firstRow.plannedLaunchDate}
+                  timelineWidth={timelineWidth}
+                />
 
                 {/* Today vertical line across all rows */}
                 <div className="relative">
