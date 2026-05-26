@@ -2,6 +2,7 @@
 
 import { AppShell } from "@/components/app-shell"
 import { GanttChart } from "@/components/gantt-chart"
+import { ProgramGantt } from "@/components/program-gantt"
 import {
   buildAllLaunchGanttRows,
   masterfilePlanClusters2026,
@@ -455,9 +456,22 @@ export default function LaunchPage() {
         </div>
       </div>
 
+      {/* === Анализ производственной программы: интерактивный Ганта === */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2 mb-2">
+          <h2 className="text-sm font-semibold text-foreground">Анализ производственной программы</h2>
+          <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded border border-border font-mono">
+            Мастерфайл · ДФ25 (инфраструктура)
+          </span>
+        </div>
+        <p className="text-xs text-muted-foreground mb-3">
+          Объекты инфраструктуры и кустовые площадки на общей оси времени. Нажмите на строку — откроется чек-лист ДФ25 с диаграммой Ганта, построенной от даты запуска назад.
+        </p>
+        <ProgramGantt />
+      </div>
+
       {/* Tabs */}
-      <div className="flex gap-0.5 mb-4 border-b border-border">
-        {TABS.map(({ id, label, icon: Icon }) => (
+      <div className="flex gap-0.5 mb-4 border-b border-border">        {TABS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             onClick={() => setActiveTab(id)}

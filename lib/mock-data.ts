@@ -1673,7 +1673,7 @@ export interface RoadmapStep {
 
 export const roadmapTemplates: Record<RoadmapModule, { title: string; steps: RoadmapStep[] }> = {
   spatial: {
-    title: "Проверка пространственных координат",
+    title: "Проверка пространственных координа��",
     steps: [
       { order: 1, action: "Запросить инклинометрические ��анные и данные ГТИ по скважине у буровой службы", department: "Буровой отдел", daysToComplete: 5 },
       { order: 2, action: "Актуализировать векторный контур запасов в ГИС-системе (подсчётный план)", department: "Геологическая служба", daysToComplete: 10 },
@@ -2321,7 +2321,7 @@ export const hydroDocs: HydroDocument[] = [
   {
     id: "hd15", company: "ПАО «ТюменьРесурс»", fieldId: "mf4", fieldName: "Центральное",
     docType: "water_placement", docTypeLabel: "Проект размещения подземных вод",
-    docNumber: "ПРВ-ЦНТ-2023-09", docTitle: "Проект захоронения попутно-пластовых вод Центрального м-я",
+    docNumber: "ПРВ-Ц��Т-2023-09", docTitle: "Проект захоронения попутно-пластовых вод Центрального м-я",
     approvedBy: "Роснедра (Сибнедра)", approvalDate: "12.09.2023", expiryDate: "12.09.2028", daysLeft: 841,
     status: "ok",
     comment: "Актуален.",
@@ -2559,11 +2559,142 @@ export function buildAllLaunchGanttRows(): GanttRow[] {
   return rows
 }
 
+// Forward-declare ChecklistStatus here so InfraObject can reference it
+// (full definition is below in the DF25 section)
+export type ChecklistStatus = "done" | "pending" | "critical"
+
+// ──────────────────────────────────────────────────────────────────────────────
+// INFRASTRUCTURE OBJECTS (ДФ25) — УПН, ГТСУ, БКНС, ДНС
+// Objects that receive production from cluster pads
+// ──────────────────────────────────────────────────────────────────────────────
+
+export type InfraType = "upn" | "gtsu" | "bkns" | "dns"
+
+export interface InfraObject {
+  id: string
+  name: string
+  type: InfraType
+  typeLabel: string
+  fieldId: string
+  fieldName: string
+  company: string
+  plannedLaunchDate: string
+  /** IDs of masterfileClusters (plan) that connect to this infra object */
+  connectedClusterIds: string[]
+  checklistStatus: Record<string, ChecklistStatus>
+}
+
+export const infraObjects: InfraObject[] = [
+  {
+    id: "inf1",
+    name: "УПН-3 «Западно-Сибирская»",
+    type: "upn",
+    typeLabel: "УПН",
+    fieldId: "mf1",
+    fieldName: "Западно-Сибирское",
+    company: "ООО «НефтьГаз-Запад»",
+    plannedLaunchDate: "01.07.2026",
+    connectedClusterIds: ["pmc1"],
+    checklistStatus: {
+      r1: "done", r2: "done", r3: "pending", r4: "done", r5: "done",
+      r6: "pending", r7: "pending", r8: "done", r9: "done", r10: "pending",
+      r11: "pending", r12: "pending", r13: "done", r14: "pending", r15: "done",
+      r16: "done", r17: "pending", r18: "pending", r19: "pending", r20: "done",
+      r21: "done", r22: "pending", r23: "done", r24: "pending", r25: "pending",
+      r26: "pending", r27: "pending", r28: "done", r29: "pending", r30: "pending", r31: "pending",
+    },
+  },
+  {
+    id: "inf2",
+    name: "ГТСУ «Арктическое-2»",
+    type: "gtsu",
+    typeLabel: "ГТСУ",
+    fieldId: "mf3",
+    fieldName: "Арктическое",
+    company: "АО «СеверДобыча»",
+    plannedLaunchDate: "01.09.2026",
+    connectedClusterIds: ["pmc2"],
+    checklistStatus: {
+      r1: "critical", r2: "pending", r3: "pending", r4: "done", r5: "pending",
+      r6: "pending", r7: "critical", r8: "pending", r9: "pending", r10: "pending",
+      r11: "pending", r12: "pending", r13: "pending", r14: "pending", r15: "pending",
+      r16: "pending", r17: "done", r18: "critical", r19: "pending", r20: "pending",
+      r21: "done", r22: "pending", r23: "pending", r24: "pending", r25: "pending",
+      r26: "pending", r27: "pending", r28: "pending", r29: "pending", r30: "pending", r31: "pending",
+    },
+  },
+  {
+    id: "inf3",
+    name: "БКНС «Северное-1»",
+    type: "bkns",
+    typeLabel: "БКНС",
+    fieldId: "mf2",
+    fieldName: "Северное",
+    company: "ООО «НефтьГаз-Запад»",
+    plannedLaunchDate: "01.01.2027",
+    connectedClusterIds: ["pmc3"],
+    checklistStatus: {
+      r1: "done", r2: "done", r3: "done", r4: "done", r5: "done",
+      r6: "done", r7: "done", r8: "done", r9: "done", r10: "pending",
+      r11: "pending", r12: "done", r13: "done", r14: "pending", r15: "done",
+      r16: "done", r17: "done", r18: "done", r19: "done", r20: "done",
+      r21: "done", r22: "done", r23: "done", r24: "pending", r25: "pending",
+      r26: "pending", r27: "done", r28: "done", r29: "done", r30: "pending", r31: "pending",
+    },
+  },
+]
+
+// The 31 DF25 requirements in exact checklist order (from the attachment)
+// These are used for both clusters and infra objects
+export const df25ChecklistItems: { id: string; requirement: string; department: string }[] = [
+  { id: "r1",  requirement: "Уведомление об окончании СМР по форме Ф_01.РГ.05.09 (ред.4)", department: "Блок проектной инвестиционной деятельности" },
+  { id: "r2",  requirement: "Приказ руководителя ООО «ИНК» и Обществ о назначении ПРК", department: "Блок проектной инвестиционной деятельности" },
+  { id: "r3",  requirement: "Акт ПРК", department: "Блок проектной инвестиционной деятельности" },
+  { id: "r4",  requirement: "Акт устранения замечаний ПРК", department: "Блок проектной инвестиционной деятельности" },
+  { id: "r5",  requirement: "Приказ о назначении РК", department: "Блок проектной инвестиционной деятельности" },
+  { id: "r6",  requirement: "Программа комплексного опробования (КО), инструкции по эксплуатации", department: "Блок главного инженера" },
+  { id: "r7",  requirement: "Технологический регламент", department: "Блок главного инженера" },
+  { id: "r8",  requirement: "Паспорт на установку (паспорта на оборудование)", department: "Блок главного инженера" },
+  { id: "r9",  requirement: "Проектная/конструкторская документация", department: "Блок главного инженера" },
+  { id: "r10", requirement: "Акт РК о готовности объекта к проведению КО", department: "Блок главного инженера" },
+  { id: "r11", requirement: "Акт РК о приёмке оборудования после КО", department: "Блок главного инженера" },
+  { id: "r12", requirement: "Приказ/Распоряжение о вводе в эксплуатацию", department: "Блок главного инженера" },
+  { id: "r13", requirement: "Выполнены требования РГ по монтажу трубопроводов (ПАТ)", department: "Блок главного инженера" },
+  { id: "r14", requirement: "Наличие утверждённой декларации на запуск", department: "Блок главного инженера" },
+  { id: "r15", requirement: "Наличие ПМЛА", department: "Блок главного инженера" },
+  { id: "r16", requirement: "Приказ о назначении приёмочной комиссии", department: "Управление промышленной безопасности" },
+  { id: "r17", requirement: "Акт КС-14", department: "Управление промышленной безопасности" },
+  { id: "r18", requirement: "Соблюдены нормы в рамках БДД", department: "Управление промышленной безопасности" },
+  { id: "r19", requirement: "ЗОС/ЭКОЗОС", department: "Управление экологии" },
+  { id: "r20", requirement: "Наличие ПЛАРН", department: "Управление экологии" },
+  { id: "r21", requirement: "Комплексное экологическое разрешение (КЭР) на объект", department: "Управление экологии" },
+  { id: "r22", requirement: "Соответствие плановых норм выбросов в КЭР и плановых выбросов при эксплуатации объекта", department: "Управление экологии" },
+  { id: "r23", requirement: "Наличие разрешения на осуществление деятельности в водоохранной зоне", department: "Управление экологии" },
+  { id: "r24", requirement: "Постановка на учёт объекта НВОС", department: "Управление экологии" },
+  { id: "r25", requirement: "Наличие согласованного землеотвода на территории размещения объекта", department: "Департамент землепользования" },
+  { id: "r26", requirement: "Наличие запасов промышленной категории", department: "Управление геологии и разработки" },
+  { id: "r27", requirement: "Наличие технологической схемы разработки", department: "Управление геологии и разработки" },
+  { id: "r28", requirement: "Наличие ПРГР", department: "Управление геологии и разработки" },
+  { id: "r29", requirement: "Наличие технологического регламента", department: "Блок главного инженера" },
+  { id: "r30", requirement: "Ввод скважины в эксплуатацию", department: "Блок главного инженера" },
+  { id: "r31", requirement: "Выполнены требования к объектовому режиму", department: "Управление внутреннего административного контроля" },
+]
+
+// Days before launch when each item must be done (in checklist order)
+export const df25ChecklistDays: number[] = [
+  30, 45, 14, 7, 21,        // r1–r5  (ПИД)
+  60, 90, 30, 120, 7,       // r6–r10 (ГИ)
+  7,  7,  14, 30, 30,       // r11–r15 (ГИ cont)
+  30, 14, 7,                // r16–r18 (УПБ)
+  60, 30, 120, 30, 90, 30,  // r19–r24 (экология)
+  90,                       // r25 (землепользование)
+  120, 180, 90,             // r26–r28 (геология)
+  90, 14, 14,               // r29–r31 (ГИ + УАВК)
+]
+
 // ──────────────────────────────────────────────────────────────────────────────
 // ДФ25 CHECKLIST — Требования к запуску новых кустовых площадок
 // ──────────────────────────────────────────────────────────────────────────────
-
-export type ChecklistStatus = "done" | "pending" | "critical"
 
 export interface DF25Requirement {
   id: string
