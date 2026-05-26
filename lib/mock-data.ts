@@ -1673,7 +1673,7 @@ export interface RoadmapStep {
 
 export const roadmapTemplates: Record<RoadmapModule, { title: string; steps: RoadmapStep[] }> = {
   spatial: {
-    title: "Проверка пространственных координа��",
+    title: "Проверка пространственных координа����",
     steps: [
       { order: 1, action: "Запросить инклинометрические ��анные и данные ГТИ по скважине у буровой службы", department: "Буровой отдел", daysToComplete: 5 },
       { order: 2, action: "Актуализировать векторный контур запасов в ГИС-системе (подсчётный план)", department: "Геологическая служба", daysToComplete: 10 },
@@ -2646,38 +2646,46 @@ export const infraObjects: InfraObject[] = [
 
 // The 31 DF25 requirements in exact checklist order (from the attachment)
 // These are used for both clusters and infra objects
-export const df25ChecklistItems: { id: string; requirement: string; department: string }[] = [
-  { id: "r1",  requirement: "Уведомление об окончании СМР по форме Ф_01.РГ.05.09 (ред.4)", department: "Блок проектной инвестиционной деятельности" },
-  { id: "r2",  requirement: "Приказ руководителя ООО «ИНК» и Обществ о назначении ПРК", department: "Блок проектной инвестиционной деятельности" },
-  { id: "r3",  requirement: "Акт ПРК", department: "Блок проектной инвестиционной деятельности" },
-  { id: "r4",  requirement: "Акт устранения замечаний ПРК", department: "Блок проектной инвестиционной деятельности" },
-  { id: "r5",  requirement: "Приказ о назначении РК", department: "Блок проектной инвестиционной деятельности" },
-  { id: "r6",  requirement: "Программа комплексного опробования (КО), инструкции по эксплуатации", department: "Блок главного инженера" },
-  { id: "r7",  requirement: "Технологический регламент", department: "Блок главного инженера" },
-  { id: "r8",  requirement: "Паспорт на установку (паспорта на оборудование)", department: "Блок главного инженера" },
-  { id: "r9",  requirement: "Проектная/конструкторская документация", department: "Блок главного инженера" },
-  { id: "r10", requirement: "Акт РК о готовности объекта к проведению КО", department: "Блок главного инженера" },
-  { id: "r11", requirement: "Акт РК о приёмке оборудования после КО", department: "Блок главного инженера" },
-  { id: "r12", requirement: "Приказ/Распоряжение о вводе в эксплуатацию", department: "Блок главного инженера" },
-  { id: "r13", requirement: "Выполнены требования РГ по монтажу трубопроводов (ПАТ)", department: "Блок главного инженера" },
-  { id: "r14", requirement: "Наличие утверждённой декларации на запуск", department: "Блок главного инженера" },
-  { id: "r15", requirement: "Наличие ПМЛА", department: "Блок главного инженера" },
-  { id: "r16", requirement: "Приказ о назначении приёмочной комиссии", department: "Управление промышленной безопасности" },
-  { id: "r17", requirement: "Акт КС-14", department: "Управление промышленной безопасности" },
-  { id: "r18", requirement: "Соблюдены нормы в рамках БДД", department: "Управление промышленной безопасности" },
-  { id: "r19", requirement: "ЗОС/ЭКОЗОС", department: "Управление экологии" },
-  { id: "r20", requirement: "Наличие ПЛАРН", department: "Управление экологии" },
-  { id: "r21", requirement: "Комплексное экологическое разрешение (КЭР) на объект", department: "Управление экологии" },
-  { id: "r22", requirement: "Соответствие плановых норм выбросов в КЭР и плановых выбросов при эксплуатации объекта", department: "Управление экологии" },
-  { id: "r23", requirement: "Наличие разрешения на осуществление деятельности в водоохранной зоне", department: "Управление экологии" },
-  { id: "r24", requirement: "Постановка на учёт объекта НВОС", department: "Управление экологии" },
-  { id: "r25", requirement: "Наличие согласованного землеотвода на территории размещения объекта", department: "Департамент землепользования" },
-  { id: "r26", requirement: "Наличие запасов промышленной категории", department: "Управление геологии и разработки" },
-  { id: "r27", requirement: "Наличие технологической схемы разработки", department: "Управление геологии и разработки" },
-  { id: "r28", requirement: "Наличие ПРГР", department: "Управление геологии и разработки" },
-  { id: "r29", requirement: "Наличие технологического регламента", department: "Блок главного инженера" },
-  { id: "r30", requirement: "Ввод скважины в эксплуатацию", department: "Блок главного инженера" },
-  { id: "r31", requirement: "Выполнены требования к объектовому режиму", department: "Управление внутреннего административного контроля" },
+export interface DF25ChecklistItem {
+  id: string
+  requirement: string
+  department: string
+  responsible: string   // ответственный сотрудник
+  docLink?: string      // ссылка на документ / шаблон
+}
+
+export const df25ChecklistItems: DF25ChecklistItem[] = [
+  { id: "r1",  requirement: "Уведомление об окончании СМР по форме Ф_01.РГ.05.09 (ред.4)", department: "Блок проектной инвестиционной деятельности", responsible: "Петров А.В.", docLink: "#" },
+  { id: "r2",  requirement: "Приказ руководителя ООО «ИНК» и Обществ о назначении ПРК", department: "Блок проектной инвестиционной деятельности", responsible: "Иванова М.С.", docLink: "#" },
+  { id: "r3",  requirement: "Акт ПРК", department: "Блок проектной инвестиционной деятельности", responsible: "Сидоров К.Н." },
+  { id: "r4",  requirement: "Акт устранения замечаний ПРК", department: "Блок проектной инвестиционной деятельности", responsible: "Сидоров К.Н." },
+  { id: "r5",  requirement: "Приказ о назначении РК", department: "Блок проектной инвестиционной деятельности", responsible: "Иванова М.С.", docLink: "#" },
+  { id: "r6",  requirement: "Программа комплексного опробования (КО), инструкции по эксплуатации", department: "Блок главного инженера", responsible: "Козлов Д.А.", docLink: "#" },
+  { id: "r7",  requirement: "Технологический регламент", department: "Блок главного инженера", responsible: "Козлов Д.А.", docLink: "#" },
+  { id: "r8",  requirement: "Паспорт на установку (паспорта на оборудование)", department: "Блок главного инженера", responsible: "Морозова Е.И." },
+  { id: "r9",  requirement: "Проектная/конструкторская документация", department: "Блок главного инженера", responsible: "Новиков С.Р.", docLink: "#" },
+  { id: "r10", requirement: "Акт РК о готовности объекта к проведению КО", department: "Блок главного инженера", responsible: "Козлов Д.А." },
+  { id: "r11", requirement: "Акт РК о приёмке оборудования после КО", department: "Блок главного инженера", responsible: "Козлов Д.А." },
+  { id: "r12", requirement: "Приказ/Распоряжение о вводе в эксплуатацию", department: "Блок главного инженера", responsible: "Козлов Д.А.", docLink: "#" },
+  { id: "r13", requirement: "Выполнены требования РГ по монтажу трубопроводов (ПАТ)", department: "Блок главного инженера", responsible: "Федоров П.М." },
+  { id: "r14", requirement: "Наличие утверждённой декларации на запуск", department: "Блок главного инженера", responsible: "Козлов Д.А.", docLink: "#" },
+  { id: "r15", requirement: "Наличие ПМЛА", department: "Блок главного инженера", responsible: "Волков А.О.", docLink: "#" },
+  { id: "r16", requirement: "Приказ о назначении приёмочной комиссии", department: "Управление промышленной безопасности", responsible: "Зайцев Б.Г.", docLink: "#" },
+  { id: "r17", requirement: "Акт КС-14", department: "Управление промышленной безопасности", responsible: "Зайцев Б.Г." },
+  { id: "r18", requirement: "Соблюдены нормы в рамках БДД", department: "Управление промышленной безопасности", responsible: "Лебедев Н.В." },
+  { id: "r19", requirement: "ЗОС/ЭКОЗОС", department: "Управление экологии", responsible: "Орлова Т.С.", docLink: "#" },
+  { id: "r20", requirement: "Наличие ПЛАРН", department: "Управление экологии", responsible: "Орлова Т.С.", docLink: "#" },
+  { id: "r21", requirement: "Комплексное экологическое разрешение (КЭР) на объект", department: "Управление экологии", responsible: "Орлова Т.С.", docLink: "#" },
+  { id: "r22", requirement: "Соответствие плановых норм выбросов в КЭР и плановых выбросов при эксплуатации объекта", department: "Управление экологии", responsible: "Орлова Т.С." },
+  { id: "r23", requirement: "Наличие разрешения на осуществление деятельности в водоохранной зоне", department: "Управление экологии", responsible: "Смирнова Ю.Ф.", docLink: "#" },
+  { id: "r24", requirement: "Постановка на учёт объекта НВОС", department: "Управление экологии", responsible: "Смирнова Ю.Ф.", docLink: "#" },
+  { id: "r25", requirement: "Наличие согласованного землеотвода на территории размещения объекта", department: "Департамент землепользования", responsible: "Белов И.К.", docLink: "#" },
+  { id: "r26", requirement: "Наличие запасов промышленной категории", department: "Управление геологии и разработки", responsible: "Чернов В.А.", docLink: "#" },
+  { id: "r27", requirement: "Наличие технологической схемы разработки", department: "Управление геологии и разработки", responsible: "Чернов В.А.", docLink: "#" },
+  { id: "r28", requirement: "Наличие ПРГР", department: "Управление геологии и разработки", responsible: "Чернов В.А.", docLink: "#" },
+  { id: "r29", requirement: "Наличие технологического регламента", department: "Блок главного инженера", responsible: "Козлов Д.А.", docLink: "#" },
+  { id: "r30", requirement: "Ввод скважины в эксплуатацию", department: "Блок главного инженера", responsible: "Морозова Е.И." },
+  { id: "r31", requirement: "Выполнены требования к объектовому режиму", department: "Управление внутреннего административного контроля", responsible: "Кузнецов Р.Д." },
 ]
 
 // Days before launch when each item must be done (in checklist order)

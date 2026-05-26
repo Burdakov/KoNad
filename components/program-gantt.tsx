@@ -10,16 +10,17 @@ import {
   type MasterfileCluster,
   type InfraObject,
   type ChecklistStatus,
+  type DF25ChecklistItem,
 } from "@/lib/mock-data"
 import {
-  CheckCircle2, Clock, XCircle, ChevronRight, X,
+  CheckCircle2, Clock, XCircle, ChevronDown,
   Factory, Drill, Flame, Waves, AlertTriangle,
+  User, Building2, CalendarRange, Link2, ExternalLink,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-// Mock "today" matches the rest of the app: 23.05.2026
 const TODAY = new Date(2026, 4, 23)
 
 function parseDate(ddmmyyyy: string): Date {
@@ -31,81 +32,94 @@ function daysDiff(a: Date, b: Date) {
   return Math.round((b.getTime() - a.getTime()) / 86400000)
 }
 
-// ── Timeline window: 01.01.2026 → 31.12.2027
+function addDays(d: Date, n: number): Date {
+  return new Date(d.getTime() + n * 86400000)
+}
+
+function fmtDate(d: Date): string {
+  return d.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" })
+}
+
+// Timeline window: 01.01.2026 → 31.12.2027
 const TIMELINE_START = new Date(2026, 0, 1)
 const TIMELINE_END   = new Date(2027, 11, 31)
 const TOTAL_DAYS     = daysDiff(TIMELINE_START, TIMELINE_END)
 
 // Label column width
-const LABEL_W = 220
-// Minimum gantt canvas width
+const LABEL_W     = 220
 const CANVAS_MIN_W = 640
+
+// Checklist panel: show 7 months before launch
+const PANEL_MONTHS = 7
+
+// Row height in the checklist gantt (px) — tall enough for the extra fields
+const ROW_H = 72
+
+// Dependencies: r26 → r27 → r28 (Подсчёт запасов → Техсхема → ПРГР)
+// Each entry: { from: itemId, to: itemId }
+const DEPENDENCIES: { from: string; to: string }[] = [
+  { from: "r26", to: "r27" },
+  { from: "r27", to: "r28" },
+]
 
 const INFRA_TYPE_ICON: Record<string, React.ElementType> = {
   upn: Factory, gtsu: Flame, bkns: Waves, dns: Drill,
 }
 
-const STATUS_COLOR: Record<ChecklistStatus, string> = {
-  done:     "#16a34a",
-  pending:  "#6b7280",
-  critical: "#dc2626",
-}
-const STATUS_BG: Record<ChecklistStatus, string> = {
-  done:     "#f0fdf4",
-  pending:  "#f9fafb",
-  critical: "#fef2f2",
-}
-
 const DEPT_COLORS: Record<string, string> = {
-  "Блок проектной инвестиционной деятельности": "#2563eb",
-  "Блок главного инженера":                     "#0891b2",
-  "Управление промышленной безопасности":       "#dc2626",
-  "Управление экологии":                        "#16a34a",
-  "Департамент землепользования":               "#ca8a04",
-  "Управление геологии и разработки":           "#9333ea",
+  "Блок проектной инвестиционной деятельности":   "#2563eb",
+  "Блок главного инженера":                        "#0891b2",
+  "Управление промышленной безопасности":          "#dc2626",
+  "Управление экологии":                           "#16a34a",
+  "Департамент землепользования":                  "#ca8a04",
+  "Управление геологии и разработки":              "#9333ea",
   "Управление внутреннего административного контроля": "#ea580c",
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function pct(days: number): string {
-  return `${Math.max(0, Math.min(100, (days / TOTAL_DAYS) * 100)).toFixed(3)}%`
+function pct(days: number, total: number): string {
+  return `${Math.max(0, Math.min(100, (days / total) * 100)).toFixed(3)}%`
 }
 
 function launchStatus(launchDate: Date): "ok" | "warn" | "critical" {
   const d = daysDiff(TODAY, launchDate)
-  if (d < 0)   return "critical"
-  if (d < 60)  return "warn"
+  if (d < 0)  return "critical"
+  if (d < 60) return "warn"
   return "ok"
 }
 
-// ─── ChecklistPanel (slide-out to the right) ──────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type PanelObject =
   | { kind: "cluster"; data: MasterfileCluster }
   | { kind: "infra";   data: InfraObject }
 
-interface ChecklistPanelProps {
+// ─── ChecklistGantt (inline panel below clicked row) ─────────────────────────
+
+interface ChecklistGanttProps {
   obj: PanelObject
   onClose: () => void
 }
 
-function ChecklistPanel({ obj, onClose }: ChecklistPanelProps) {
+function ChecklistGantt({ obj, onClose }: ChecklistGanttProps) {
   const launchDateStr =
-    obj.kind === "cluster"
-      ? (obj.data.plannedLaunchDate ?? "")
-      : obj.data.plannedLaunchDate
+    obj.kind === "cluster" ? (obj.data.plannedLaunchDate ?? "") : obj.data.plannedLaunchDate
   const launchDate = parseDate(launchDateStr)
 
-  // Determine status map
+  // Timeline: PANEL_MONTHS before launch
+  const ganttStart = useMemo(() => {
+    const d = new Date(launchDate)
+    d.setMonth(d.getMonth() - PANEL_MONTHS)
+    d.setDate(1)
+    return d
+  }, [launchDateStr])
+  const ganttDays = daysDiff(ganttStart, launchDate)
+
+  // Build status map
   const statusMap: Record<string, ChecklistStatus> = useMemo(() => {
     if (obj.kind === "cluster") {
       const items = clusterChecklistItems.filter((ci) => ci.clusterId === obj.data.id)
       const m: Record<string, ChecklistStatus> = {}
-      // Map df25ChecklistItems by index to clusterChecklistItems
       df25ChecklistItems.forEach((item, idx) => {
-        // Legacy DF25 requirements use different IDs — use positional mapping
-        // clusterChecklistItems use df01..df31; df25ChecklistItems use r1..r31
         const legacyId = `df${String(idx + 1).padStart(2, "0")}`
         const ci = items.find((i) => i.requirementId === legacyId)
         m[item.id] = ci?.status ?? "pending"
@@ -120,161 +134,325 @@ function ChecklistPanel({ obj, onClose }: ChecklistPanelProps) {
   const total    = df25ChecklistItems.length
   const progress = Math.round((done / total) * 100)
 
-  // Timeline: show last 6 months before launch
-  const ganttStart = new Date(launchDate)
-  ganttStart.setMonth(ganttStart.getMonth() - 6)
-  const ganttDays = daysDiff(ganttStart, launchDate)
-
-  const panelRef = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose() }
-    document.addEventListener("keydown", handleKey)
-    return () => document.removeEventListener("keydown", handleKey)
-  }, [onClose])
-
   const objectName = obj.kind === "cluster" ? obj.data.clusterName : obj.data.name
+  const fieldName  = obj.kind === "cluster" ? obj.data.fieldName   : obj.data.fieldName
   const Icon = obj.kind === "infra" ? (INFRA_TYPE_ICON[obj.data.type] ?? Factory) : Drill
 
+  // Key press close
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose() }
+    document.addEventListener("keydown", h)
+    return () => document.removeEventListener("keydown", h)
+  }, [onClose])
+
+  // Compute bar geometry for each item
+  interface BarData {
+    item: DF25ChecklistItem
+    status: ChecklistStatus
+    barStartPct: number
+    barWidthPct: number
+    barColor: string
+    startDate: Date
+    endDate: Date
+    daysLeft: number
+  }
+
+  const bars: BarData[] = useMemo(() => df25ChecklistItems.map((item, idx) => {
+    const daysLeft   = df25ChecklistDays[idx] ?? 30
+    const endDate    = launchDate
+    const startDate  = addDays(launchDate, -daysLeft)
+    const startOff   = daysDiff(ganttStart, startDate)
+    const barW       = daysLeft
+    const baseColor  = DEPT_COLORS[item.department] ?? "#6b7280"
+    const status     = statusMap[item.id] ?? "pending"
+    return {
+      item,
+      status,
+      barStartPct: (startOff / ganttDays) * 100,
+      barWidthPct: (barW    / ganttDays) * 100,
+      barColor: status === "done"     ? "#16a34a"
+              : status === "critical" ? "#dc2626"
+              : baseColor,
+      startDate,
+      endDate,
+      daysLeft,
+    }
+  }), [ganttDays, statusMap, launchDate, ganttStart])
+
+  // Month labels
+  const months = useMemo(() => {
+    const list: { label: string; offsetPct: number }[] = []
+    const d = new Date(ganttStart)
+    while (d <= launchDate) {
+      list.push({
+        label: d.toLocaleDateString("ru-RU", { month: "short", year: "2-digit" }),
+        offsetPct: (daysDiff(ganttStart, new Date(d)) / ganttDays) * 100,
+      })
+      d.setMonth(d.getMonth() + 1)
+    }
+    return list
+  }, [ganttStart, ganttDays, launchDate])
+
+  // Layout constants
+  const LABEL_COL = 260   // px — checklist label column
+  const INFO_COL  = 320   // px — dept / responsible / dates / link column
+  const GANTT_COL = 440   // px — gantt bar column (min)
+  const HEADER_H  = 32    // px
+
+  // SVG arrow layer: dependency lines
+  // We need to compute bar end-x for each item to draw FS arrows
+  // barEndX (relative to gantt column) = (barStartPct + barWidthPct) / 100 * GANTT_COL
+  const svgArrows = useMemo(() => {
+    return DEPENDENCIES.map(({ from, to }) => {
+      const fromIdx = df25ChecklistItems.findIndex((i) => i.id === from)
+      const toIdx   = df25ChecklistItems.findIndex((i) => i.id === to)
+      if (fromIdx < 0 || toIdx < 0) return null
+
+      const fromBar = bars[fromIdx]
+      const toBar   = bars[toIdx]
+
+      // x positions relative to gantt column start
+      const x1 = ((fromBar.barStartPct + fromBar.barWidthPct) / 100) * GANTT_COL
+      const x2 = (toBar.barStartPct / 100) * GANTT_COL
+      // y positions: center of each row (HEADER_H + idx * ROW_H + ROW_H/2)
+      const y1 = HEADER_H + fromIdx * ROW_H + ROW_H / 2
+      const y2 = HEADER_H + toIdx   * ROW_H + ROW_H / 2
+
+      return { x1, y1, x2, y2, key: `${from}-${to}` }
+    }).filter(Boolean) as { x1: number; y1: number; x2: number; y2: number; key: string }[]
+  }, [bars])
+
+  const totalHeight = HEADER_H + df25ChecklistItems.length * ROW_H
+
   return (
-    <div
-      ref={panelRef}
-      className="flex flex-col bg-card border-l border-border h-full overflow-hidden"
-      style={{ width: 540 }}
-    >
-      {/* Header */}
-      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-border flex-shrink-0">
-        <div className="flex items-center justify-center size-7 rounded bg-primary/10 text-primary">
+    <div className="border border-border rounded-b-lg bg-card overflow-hidden">
+      {/* Panel header */}
+      <div className="flex items-center gap-3 px-4 py-2.5 border-b border-border bg-muted/40">
+        <div className="flex items-center justify-center size-7 rounded bg-primary/10 text-primary flex-shrink-0">
           <Icon className="size-4" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-semibold text-foreground truncate">{objectName}</div>
+          <div className="text-sm font-semibold text-foreground">{objectName}</div>
           <div className="text-[10px] text-muted-foreground">
-            {obj.kind === "cluster" ? obj.data.fieldName : obj.data.fieldName}
-            {" · Запуск: "}
-            <span className="font-mono font-medium">{launchDateStr}</span>
+            {fieldName}{" · Запуск: "}<span className="font-mono font-medium">{launchDateStr}</span>
+          </div>
+        </div>
+        {/* Progress summary */}
+        <div className="flex items-center gap-4 text-[11px] mr-4">
+          <span className="text-green-700 font-medium">{done} выполнено</span>
+          {critical > 0 && <span className="text-red-700 font-medium">{critical} нарушений</span>}
+          <span className="text-muted-foreground">{total - done - critical} ожидает</span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-20 h-1.5 rounded-full bg-muted overflow-hidden">
+              <div className="h-full bg-primary rounded-full" style={{ width: `${progress}%` }} />
+            </div>
+            <span className="font-mono font-semibold text-foreground">{progress}%</span>
           </div>
         </div>
         <button
           onClick={onClose}
-          className="flex-shrink-0 flex items-center justify-center size-7 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="Закрыть"
+          className="flex-shrink-0 text-[10px] text-muted-foreground hover:text-foreground border border-border rounded px-2 py-0.5 hover:bg-muted transition-colors"
         >
-          <X className="size-4" />
+          Свернуть
         </button>
       </div>
 
-      {/* Progress */}
-      <div className="px-4 py-2.5 border-b border-border flex-shrink-0 space-y-1.5">
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">Готовность к запуску</span>
-          <span className="font-mono font-semibold text-foreground">{progress}%</span>
-        </div>
-        <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-          <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progress}%` }} />
-        </div>
-        <div className="flex items-center gap-3 text-[10px]">
-          <span className="text-green-700 font-medium">{done} выполнено</span>
-          {critical > 0 && <span className="text-red-700 font-medium">{critical} нарушений</span>}
-          <span className="text-muted-foreground">{total - done - critical} ожидает</span>
-        </div>
-      </div>
+      {/* Scrollable table */}
+      <div className="overflow-x-auto overflow-y-auto" style={{ maxHeight: 520 }}>
+        <div style={{ minWidth: LABEL_COL + INFO_COL + GANTT_COL, position: "relative" }}>
 
-      {/* Gantt — scrollable */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        {/* Gantt header — month labels */}
-        <div className="sticky top-0 z-10 bg-muted/80 border-b border-border flex" style={{ height: 28 }}>
-          <div className="flex-shrink-0 bg-muted/80 border-r border-border" style={{ width: LABEL_W }} />
-          <div className="flex-1 relative overflow-hidden">
-            {Array.from({ length: 7 }, (_, i) => {
-              const d = new Date(ganttStart)
-              d.setMonth(d.getMonth() + i)
-              const offset = daysDiff(ganttStart, d)
-              return (
+          {/* Column headers */}
+          <div
+            className="flex sticky top-0 z-20 bg-muted border-b border-border text-[10px] font-semibold text-muted-foreground uppercase tracking-wide"
+            style={{ height: HEADER_H }}
+          >
+            <div className="flex items-center px-3 border-r border-border flex-shrink-0" style={{ width: LABEL_COL }}>
+              Требование
+            </div>
+            <div className="flex items-center px-3 border-r border-border flex-shrink-0" style={{ width: INFO_COL }}>
+              Подразделение · Ответственный · Сроки
+            </div>
+            <div className="flex-1 relative" style={{ minWidth: GANTT_COL }}>
+              {/* Month ticks */}
+              {months.map((m) => (
                 <div
-                  key={i}
+                  key={m.label}
                   className="absolute top-0 bottom-0 flex items-center pl-1 text-[9px] text-muted-foreground border-l border-border/40"
-                  style={{ left: pct(offset) }}
+                  style={{ left: `${m.offsetPct.toFixed(2)}%` }}
                 >
-                  {d.toLocaleDateString("ru-RU", { month: "short" })}
+                  {m.label}
                 </div>
+              ))}
+              {/* Launch line */}
+              <div
+                className="absolute top-0 bottom-0 w-0.5 bg-red-500/50 z-10"
+                style={{ left: "100%", transform: "translateX(-1px)" }}
+              />
+            </div>
+          </div>
+
+          {/* SVG arrow layer — absolute over the gantt column */}
+          <svg
+            className="absolute pointer-events-none z-10"
+            style={{
+              left: LABEL_COL + INFO_COL,
+              top: 0,
+              width: GANTT_COL,
+              height: totalHeight,
+              overflow: "visible",
+            }}
+          >
+            <defs>
+              <marker id="arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L6,3 z" fill="#9333ea" />
+              </marker>
+            </defs>
+            {svgArrows.map(({ x1, y1, x2, y2, key }) => {
+              // Route: right from bar end, down, then left to bar start
+              const midX = (x1 + x2) / 2
+              return (
+                <g key={key}>
+                  <path
+                    d={`M ${x1} ${y1} C ${x1 + 20} ${y1}, ${x2 - 20} ${y2}, ${x2} ${y2}`}
+                    fill="none"
+                    stroke="#9333ea"
+                    strokeWidth="1.5"
+                    strokeDasharray="4 3"
+                    markerEnd="url(#arrow)"
+                    opacity="0.75"
+                  />
+                </g>
               )
             })}
-            {/* Launch marker */}
-            <div
-              className="absolute top-0 bottom-0 w-0.5 bg-red-500/70"
-              style={{ left: "100%" }}
-              title="Дата запуска"
-            />
-          </div>
-        </div>
+          </svg>
 
-        {/* Rows — one per checklist item */}
-        {df25ChecklistItems.map((item, idx) => {
-          const status    = statusMap[item.id] ?? "pending"
-          const daysLeft  = df25ChecklistDays[idx] ?? 30
-          // Bar: from (launchDate - daysLeft) to launchDate, relative to ganttStart
-          const barStart  = daysDiff(ganttStart, new Date(launchDate.getTime() - daysLeft * 86400000))
-          const barPct    = (daysLeft / ganttDays) * 100
-          const barLeft   = (barStart / ganttDays) * 100
-          const barColor  = DEPT_COLORS[item.department] ?? "#6b7280"
+          {/* Data rows */}
+          {df25ChecklistItems.map((item, idx) => {
+            const bar    = bars[idx]
+            const status = bar.status
 
-          return (
-            <div
-              key={item.id}
-              className="flex border-b border-border/40 hover:bg-muted/20 transition-colors"
-              style={{ minHeight: 28 }}
-            >
-              {/* Label */}
+            return (
               <div
-                className="flex items-center gap-1.5 px-2 flex-shrink-0 border-r border-border/40"
-                style={{ width: LABEL_W }}
+                key={item.id}
+                className={cn(
+                  "flex border-b border-border/40 hover:bg-muted/10 transition-colors",
+                  idx % 2 === 1 && "bg-muted/5"
+                )}
+                style={{ height: ROW_H }}
               >
-                {status === "done"
-                  ? <CheckCircle2 className="size-3 flex-shrink-0 text-green-600" />
-                  : status === "critical"
-                    ? <XCircle className="size-3 flex-shrink-0 text-red-600" />
-                    : <Clock className="size-3 flex-shrink-0 text-gray-400" />
-                }
-                <span className="text-[10px] text-foreground leading-tight truncate flex-1" title={item.requirement}>
-                  {item.requirement}
-                </span>
-              </div>
-
-              {/* Bar in timeline */}
-              <div className="flex-1 relative">
-                {/* Bar */}
+                {/* Requirement name + status icon */}
                 <div
-                  className="absolute top-1/2 -translate-y-1/2 rounded-sm"
-                  style={{
-                    left:    `${Math.max(0, barLeft).toFixed(2)}%`,
-                    width:   `${Math.min(barPct, 100 - Math.max(0, barLeft)).toFixed(2)}%`,
-                    height:  14,
-                    background: status === "done"
-                      ? "#16a34a"
+                  className="flex items-start gap-2 px-3 py-2 border-r border-border/40 flex-shrink-0"
+                  style={{ width: LABEL_COL }}
+                >
+                  <div className="flex-shrink-0 mt-0.5">
+                    {status === "done"
+                      ? <CheckCircle2 className="size-3.5 text-green-600" />
                       : status === "critical"
-                        ? "#dc2626"
-                        : barColor,
-                    opacity: status === "pending" ? 0.45 : 0.85,
-                  }}
-                  title={`${item.requirement} · за ${daysLeft} дн. · ${item.department}`}
-                />
-                {/* Launch line */}
-                <div className="absolute top-0 bottom-0 w-px bg-red-400/40" style={{ left: "100%" }} />
-              </div>
-            </div>
-          )
-        })}
+                        ? <XCircle className="size-3.5 text-red-600" />
+                        : <Clock className="size-3.5 text-gray-400" />
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] text-foreground leading-tight line-clamp-2" title={item.requirement}>
+                      {item.requirement}
+                    </p>
+                    <span
+                      className="inline-block mt-1 text-[9px] px-1 py-0.5 rounded-sm font-medium"
+                      style={{
+                        background: (DEPT_COLORS[item.department] ?? "#6b7280") + "18",
+                        color:       DEPT_COLORS[item.department] ?? "#6b7280",
+                      }}
+                    >
+                      {item.department.replace("Управление ", "Упр. ").replace("Блок ", "").replace("Департамент ", "Деп. ")}
+                    </span>
+                  </div>
+                </div>
 
-        {/* Department legend */}
-        <div className="p-3 border-t border-border mt-1">
-          <div className="text-[10px] text-muted-foreground font-medium mb-1.5">Подразделения:</div>
-          <div className="flex flex-wrap gap-x-3 gap-y-1">
+                {/* Info column: responsible, dates, doc link */}
+                <div
+                  className="flex flex-col justify-center gap-0.5 px-3 py-1.5 border-r border-border/40 flex-shrink-0 text-[10px]"
+                  style={{ width: INFO_COL }}
+                >
+                  <div className="flex items-center gap-1 text-muted-foreground">
+                    <User className="size-2.5 flex-shrink-0" />
+                    <span className="truncate text-foreground">{item.responsible}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-muted-foreground">
+                    <CalendarRange className="size-2.5 flex-shrink-0" />
+                    <span className="font-mono">{fmtDate(bar.startDate)}</span>
+                    <span>—</span>
+                    <span className="font-mono">{fmtDate(bar.endDate)}</span>
+                    <span className="text-muted-foreground/60">({bar.daysLeft} дн.)</span>
+                  </div>
+                  {item.docLink ? (
+                    <a
+                      href={item.docLink}
+                      className="flex items-center gap-1 text-primary hover:underline w-fit"
+                      onClick={(e) => e.stopPropagation()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Link2 className="size-2.5" />
+                      <span>Документ</span>
+                      <ExternalLink className="size-2" />
+                    </a>
+                  ) : (
+                    <span className="text-muted-foreground/50 italic">нет ссылки</span>
+                  )}
+                </div>
+
+                {/* Gantt bar */}
+                <div className="flex-1 relative" style={{ minWidth: GANTT_COL }}>
+                  {/* Grid lines from months */}
+                  {months.map((m) => (
+                    <div
+                      key={m.label}
+                      className="absolute top-0 bottom-0 w-px bg-border/30"
+                      style={{ left: `${m.offsetPct.toFixed(2)}%` }}
+                    />
+                  ))}
+
+                  {/* Bar */}
+                  <div
+                    className="absolute rounded-sm flex items-center px-1.5 overflow-hidden"
+                    style={{
+                      left:       `${Math.max(0, bar.barStartPct).toFixed(2)}%`,
+                      width:      `${Math.max(0.5, Math.min(bar.barWidthPct, 100 - Math.max(0, bar.barStartPct))).toFixed(2)}%`,
+                      top:        "50%",
+                      height:     20,
+                      transform:  "translateY(-50%)",
+                      background: bar.barColor,
+                      opacity:    status === "pending" ? 0.5 : 0.85,
+                    }}
+                    title={`${item.requirement} · за ${bar.daysLeft} дн.`}
+                  />
+
+                  {/* Launch line */}
+                  <div
+                    className="absolute top-0 bottom-0 w-0.5 bg-red-400/30"
+                    style={{ left: "100%", transform: "translateX(-1px)" }}
+                  />
+                </div>
+              </div>
+            )
+          })}
+
+          {/* Legend */}
+          <div className="flex flex-wrap gap-x-4 gap-y-1 px-4 py-2.5 border-t border-border bg-muted/30 text-[9px] text-muted-foreground">
             {Object.entries(DEPT_COLORS).map(([dept, color]) => (
-              <span key={dept} className="flex items-center gap-1 text-[9px] text-muted-foreground">
+              <span key={dept} className="flex items-center gap-1">
                 <span className="inline-block size-2 rounded-sm flex-shrink-0" style={{ background: color }} />
                 {dept.replace("Управление ", "Упр. ").replace("Блок ", "").replace("Департамент ", "Деп. ")}
               </span>
             ))}
+            <span className="flex items-center gap-1 ml-auto">
+              <svg width="20" height="8">
+                <line x1="0" y1="4" x2="16" y2="4" stroke="#9333ea" strokeWidth="1.5" strokeDasharray="4 3" />
+                <path d="M14,1 L14,7 L19,4 z" fill="#9333ea" />
+              </svg>
+              Зависимость (ФН→ФЗ)
+            </span>
           </div>
         </div>
       </div>
@@ -282,7 +460,7 @@ function ChecklistPanel({ obj, onClose }: ChecklistPanelProps) {
   )
 }
 
-// ─── Program Timeline row ─────────────────────────────────────────────────────
+// ─── TimelineRow ──────────────────────────────────────────────────────────────
 
 interface TimelineRowProps {
   label: string
@@ -303,7 +481,7 @@ function TimelineRow({
   checklistDone, checklistTotal, checklistCritical,
   isSelected, onClick, barColor,
 }: TimelineRowProps) {
-  const launchDate  = parseDate(launchDateStr)
+  const launchDate   = parseDate(launchDateStr)
   const launchOffset = daysDiff(TIMELINE_START, launchDate)
   const daysUntil    = daysDiff(TODAY, launchDate)
   const todayOffset  = daysDiff(TIMELINE_START, TODAY)
@@ -312,7 +490,7 @@ function TimelineRow({
     <div
       className={cn(
         "flex border-b border-border/50 cursor-pointer group transition-colors",
-        isSelected ? "bg-primary/5 border-primary/30" : "hover:bg-muted/30",
+        isSelected ? "bg-primary/5 border-primary/20" : "hover:bg-muted/30",
       )}
       style={{ minHeight: 40 }}
       onClick={onClick}
@@ -337,7 +515,7 @@ function TimelineRow({
             {typeLabel}
           </span>
           <span className="text-xs font-medium text-foreground truncate">{label}</span>
-          {isSelected && <ChevronRight className="size-3 text-primary flex-shrink-0 ml-auto" />}
+          {isSelected && <ChevronDown className="size-3 text-primary flex-shrink-0 ml-auto" />}
         </div>
         {sublabel && (
           <span className="text-[9px] text-muted-foreground truncate mt-0.5 pl-0.5">{sublabel}</span>
@@ -357,37 +535,37 @@ function TimelineRow({
         {/* Today line */}
         <div
           className="absolute top-0 bottom-0 w-px bg-blue-400/50 z-10"
-          style={{ left: pct(todayOffset) }}
+          style={{ left: pct(todayOffset, TOTAL_DAYS) }}
         />
-
-        {/* Checklist readiness bar (from launch-180d to launch) */}
+        {/* Background readiness track */}
         <div
           className="absolute top-1/2 -translate-y-1/2 rounded"
           style={{
-            left:       pct(Math.max(0, launchOffset - 180)),
-            width:      pct(Math.min(180, launchOffset)),
-            height:     10,
+            left:    pct(Math.max(0, launchOffset - 180), TOTAL_DAYS),
+            width:   pct(Math.min(180, launchOffset), TOTAL_DAYS),
+            height:  10,
             background: barColor,
-            opacity:    0.25,
+            opacity: 0.18,
           }}
         />
-
-        {/* Completed portion of bar */}
+        {/* Filled portion */}
         <div
           className="absolute top-1/2 -translate-y-1/2 rounded"
           style={{
-            left:       pct(Math.max(0, launchOffset - 180)),
-            width:      pct(Math.min(180, launchOffset) * (checklistDone / checklistTotal)),
-            height:     10,
+            left:    pct(Math.max(0, launchOffset - 180), TOTAL_DAYS),
+            width:   pct(Math.min(180, launchOffset) * (checklistDone / checklistTotal), TOTAL_DAYS),
+            height:  10,
             background: barColor,
-            opacity:    0.85,
+            opacity: 0.85,
           }}
         />
-
-        {/* Launch diamond marker */}
+        {/* Launch diamond */}
         <div
-          className="absolute top-1/2 -translate-y-1/2 z-20"
-          style={{ left: pct(launchOffset), transform: "translate(-50%, -50%) rotate(45deg)", width: 10, height: 10,
+          className="absolute top-1/2 z-20"
+          style={{
+            left:      pct(launchOffset, TOTAL_DAYS),
+            transform: "translate(-50%, -50%) rotate(45deg)",
+            width: 10, height: 10,
             background: status === "critical" ? "#dc2626" : status === "warn" ? "#ca8a04" : "#16a34a",
             border: "2px solid white",
           }}
@@ -398,13 +576,16 @@ function TimelineRow({
   )
 }
 
-// ─── Month header ─────────────────────────────────────────────────────────────
+// ─── MonthHeader ──────────────────────────────────────────────────────────────
 
 function MonthHeader() {
   const months: { label: string; offset: number }[] = []
   const d = new Date(TIMELINE_START)
   while (d <= TIMELINE_END) {
-    months.push({ label: d.toLocaleDateString("ru-RU", { month: "short", year: "2-digit" }), offset: daysDiff(TIMELINE_START, new Date(d)) })
+    months.push({
+      label:  d.toLocaleDateString("ru-RU", { month: "short", year: "2-digit" }),
+      offset: daysDiff(TIMELINE_START, new Date(d)),
+    })
     d.setMonth(d.getMonth() + 1)
   }
   const todayOffset = daysDiff(TIMELINE_START, TODAY)
@@ -419,17 +600,16 @@ function MonthHeader() {
           <div
             key={m.offset}
             className="absolute top-0 bottom-0 flex items-center pl-1 border-l border-border/40 text-[9px] text-muted-foreground"
-            style={{ left: pct(m.offset) }}
+            style={{ left: pct(m.offset, TOTAL_DAYS) }}
           >
             {m.label}
           </div>
         ))}
-        {/* Today */}
         <div
           className="absolute top-0 bottom-0 w-0.5 bg-blue-400/60 z-10"
-          style={{ left: pct(todayOffset) }}
+          style={{ left: pct(todayOffset, TOTAL_DAYS) }}
         >
-          <span className="absolute -top-0 left-1 text-[8px] text-blue-600 font-semibold whitespace-nowrap">сегодня</span>
+          <span className="absolute top-0 left-1 text-[8px] text-blue-600 font-semibold whitespace-nowrap">сегодня</span>
         </div>
       </div>
     </div>
@@ -437,6 +617,10 @@ function MonthHeader() {
 }
 
 // ─── Main export ──────────────────────────────────────────────────────────────
+
+function makeObjId(obj: PanelObject) {
+  return `${obj.kind}:${obj.kind === "cluster" ? obj.data.id : obj.data.id}`
+}
 
 export function ProgramGantt() {
   const [selectedObj, setSelectedObj] = useState<PanelObject | null>(null)
@@ -446,7 +630,7 @@ export function ProgramGantt() {
     []
   )
 
-  // Group clusters + infra by fieldName
+  // Group by fieldName
   const fieldGroups = useMemo(() => {
     const map = new Map<string, { clusters: MasterfileCluster[]; infra: InfraObject[] }>()
     for (const c of planClusters) {
@@ -460,7 +644,7 @@ export function ProgramGantt() {
     return Array.from(map.entries())
   }, [planClusters])
 
-  function clusterChecklistStats(clusterId: string) {
+  function clusterStats(clusterId: string) {
     const items = clusterChecklistItems.filter((ci) => ci.clusterId === clusterId)
     return {
       done:     items.filter((i) => i.status === "done").length,
@@ -469,7 +653,7 @@ export function ProgramGantt() {
     }
   }
 
-  function infraChecklistStats(infra: InfraObject) {
+  function infraStats(infra: InfraObject) {
     const vals = Object.values(infra.checklistStatus) as ChecklistStatus[]
     return {
       done:     vals.filter((v) => v === "done").length,
@@ -478,43 +662,58 @@ export function ProgramGantt() {
     }
   }
 
-  const handleSelect = (obj: PanelObject) => {
+  function handleSelect(obj: PanelObject) {
     setSelectedObj((prev) => {
       if (!prev) return obj
-      const sameId = prev.kind === obj.kind && (
-        (prev.kind === "cluster" && obj.kind === "cluster" && prev.data.id === obj.data.id) ||
-        (prev.kind === "infra"   && obj.kind === "infra"   && prev.data.id === obj.data.id)
-      )
-      return sameId ? null : obj
+      return makeObjId(prev) === makeObjId(obj) ? null : obj
     })
   }
 
+  // Flatten rows in render order to know where to inject the panel
+  type RowEntry =
+    | { type: "field-header"; fieldName: string }
+    | { type: "infra";   obj: InfraObject }
+    | { type: "cluster"; obj: MasterfileCluster }
+
+  const rows: RowEntry[] = useMemo(() => {
+    const list: RowEntry[] = []
+    for (const [fieldName, { clusters, infra }] of fieldGroups) {
+      list.push({ type: "field-header", fieldName })
+      for (const inf of infra)      list.push({ type: "infra",   obj: inf })
+      for (const cls of clusters)   list.push({ type: "cluster", obj: cls })
+    }
+    return list
+  }, [fieldGroups])
+
   return (
-    <div className="flex border border-border rounded-lg overflow-hidden bg-card">
-      {/* Left: timeline */}
-      <div className="flex-1 overflow-x-auto overflow-y-auto" style={{ maxHeight: 480 }}>
+    <div className="border border-border rounded-lg overflow-hidden bg-card">
+      <div className="overflow-x-auto overflow-y-auto" style={{ maxHeight: 560 }}>
         <div style={{ minWidth: LABEL_W + CANVAS_MIN_W }}>
           <MonthHeader />
 
-          {fieldGroups.map(([fieldName, { clusters, infra }]) => (
-            <div key={fieldName}>
-              {/* Field header */}
-              <div
-                className="flex items-center border-b border-border bg-muted/60 px-3 py-1 sticky top-7 z-10"
-                style={{ minWidth: LABEL_W + CANVAS_MIN_W }}
-              >
-                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{fieldName}</span>
-              </div>
+          {rows.map((row, rowIdx) => {
+            if (row.type === "field-header") {
+              return (
+                <div
+                  key={`fh-${row.fieldName}`}
+                  className="flex items-center border-b border-border bg-muted/60 px-3 py-1 sticky z-10"
+                  style={{ top: 28, minWidth: LABEL_W + CANVAS_MIN_W }}
+                >
+                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{row.fieldName}</span>
+                </div>
+              )
+            }
 
-              {/* Infra objects first */}
-              {infra.map((inf) => {
-                const stats = infraChecklistStats(inf)
-                const ls    = launchStatus(parseDate(inf.plannedLaunchDate))
-                const InfraIcon = INFRA_TYPE_ICON[inf.type] ?? Factory
-                const isSelected = selectedObj?.kind === "infra" && selectedObj.data.id === inf.id
-                return (
+            if (row.type === "infra") {
+              const inf   = row.obj
+              const stats = infraStats(inf)
+              const ls    = launchStatus(parseDate(inf.plannedLaunchDate))
+              const panelObj: PanelObject = { kind: "infra", data: inf }
+              const isSelected = selectedObj?.kind === "infra" && selectedObj.data.id === inf.id
+
+              return (
+                <div key={`inf-${inf.id}`}>
                   <TimelineRow
-                    key={inf.id}
                     label={inf.name}
                     sublabel={inf.company}
                     typeLabel={inf.typeLabel}
@@ -524,60 +723,46 @@ export function ProgramGantt() {
                     checklistTotal={stats.total}
                     checklistCritical={stats.critical}
                     isSelected={isSelected}
-                    onClick={() => handleSelect({ kind: "infra", data: inf })}
+                    onClick={() => handleSelect(panelObj)}
                     barColor="#0891b2"
                   />
-                )
-              })}
+                  {isSelected && (
+                    <ChecklistGantt obj={panelObj} onClose={() => setSelectedObj(null)} />
+                  )}
+                </div>
+              )
+            }
 
-              {/* Cluster pads */}
-              {clusters.map((c) => {
-                const stats = clusterChecklistStats(c.id)
-                const ls    = launchStatus(parseDate(c.plannedLaunchDate ?? "01.12.2099"))
-                const isSelected = selectedObj?.kind === "cluster" && selectedObj.data.id === c.id
-                return (
-                  <TimelineRow
-                    key={c.id}
-                    label={c.clusterName}
-                    sublabel={`${c.plannedTotalOilRate ? c.plannedTotalOilRate + " т/сут · " : ""}${c.company}`}
-                    typeLabel="Куст"
-                    launchDateStr={c.plannedLaunchDate ?? ""}
-                    status={ls}
-                    checklistDone={stats.done}
-                    checklistTotal={stats.total}
-                    checklistCritical={stats.critical}
-                    isSelected={isSelected}
-                    onClick={() => handleSelect({ kind: "cluster", data: c })}
-                    barColor="#2563eb"
-                  />
-                )
-              })}
-            </div>
-          ))}
+            // cluster
+            const cls   = row.obj
+            const stats = clusterStats(cls.id)
+            const ls    = launchStatus(parseDate(cls.plannedLaunchDate ?? "01.12.2026"))
+            const panelObj: PanelObject = { kind: "cluster", data: cls }
+            const isSelected = selectedObj?.kind === "cluster" && selectedObj.data.id === cls.id
 
-          {/* Legend */}
-          <div className="flex items-center gap-5 px-4 py-2 border-t border-border text-[9px] text-muted-foreground bg-muted/30">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-sm bg-blue-600 opacity-80 inline-block" />Кустовые площадки
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-sm bg-cyan-600 opacity-80 inline-block" />Объекты инфраструктуры
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rotate-45 inline-block bg-green-600 border border-white" />Дата запуска
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-0.5 h-3 bg-blue-400 inline-block" />Сегодня
-            </span>
-            <span className="ml-auto text-muted-foreground/70">Нажмите на строку, чтобы открыть чек-лист</span>
-          </div>
+            return (
+              <div key={`cls-${cls.id}`}>
+                <TimelineRow
+                  label={cls.clusterName}
+                  sublabel={cls.fieldName}
+                  typeLabel="Куст"
+                  launchDateStr={cls.plannedLaunchDate ?? "01.12.2026"}
+                  status={ls}
+                  checklistDone={stats.done}
+                  checklistTotal={stats.total}
+                  checklistCritical={stats.critical}
+                  isSelected={isSelected}
+                  onClick={() => handleSelect(panelObj)}
+                  barColor="#16a34a"
+                />
+                {isSelected && (
+                  <ChecklistGantt obj={panelObj} onClose={() => setSelectedObj(null)} />
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
-
-      {/* Right: slide-out checklist panel */}
-      {selectedObj && (
-        <ChecklistPanel obj={selectedObj} onClose={() => setSelectedObj(null)} />
-      )}
     </div>
   )
 }
