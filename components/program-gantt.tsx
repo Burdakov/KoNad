@@ -52,8 +52,8 @@ const CANVAS_MIN_W = 640
 // Checklist panel: show 7 months before launch
 const PANEL_MONTHS = 7
 
-// Row height in the checklist gantt (px) — compact single-line
-const ROW_H = 36
+// Row height in the checklist gantt (px) — two-line compact
+const ROW_H = 42
 
 // Dependencies: r26 → r27 → r28 (Подсчёт запасов → Техсхема → ПРГР)
 // Each entry: { from: itemId, to: itemId }
@@ -194,9 +194,9 @@ function ChecklistGantt({ obj, onClose }: ChecklistGanttProps) {
   }, [ganttStart, ganttDays, launchDate])
 
   // Layout constants
-  const LABEL_COL = 280   // px — checklist label column (includes dept/responsible)
-  const GANTT_COL = 560   // px — gantt bar column (wider for readability)
-  const HEADER_H  = 28    // px
+  const LABEL_COL = 380   // px — label + dept/responsible/dates inline
+  const GANTT_COL = 320   // px — compact gantt
+  const HEADER_H  = 24    // px
 
   // SVG arrow layer: dependency lines
   // We need to compute bar end-x for each item to draw FS arrows
@@ -270,8 +270,8 @@ function ChecklistGantt({ obj, onClose }: ChecklistGanttProps) {
               {months.map((m) => (
                 <div
                   key={m.label}
-                  className="absolute top-0 bottom-0 flex items-center pl-1 text-[9px] text-muted-foreground border-l border-border/40"
-                  style={{ left: `${m.offsetPct.toFixed(2)}%` }}
+                  className="absolute top-0 bottom-0 flex items-center pl-0.5 border-l border-border/40"
+                  style={{ left: `${m.offsetPct.toFixed(2)}%`, fontSize: 7, color: "hsl(var(--muted-foreground))" }}
                 >
                   {m.label}
                 </div>
@@ -323,63 +323,69 @@ function ChecklistGantt({ obj, onClose }: ChecklistGanttProps) {
           {df25ChecklistItems.map((item, idx) => {
             const bar    = bars[idx]
             const status = bar.status
-            const deptColor = DEPT_COLORS[item.department] ?? "#6b7280"
-            const tooltipText = [
-              `Подразделение: ${item.department}`,
-              `Ответственный: ${item.responsible}`,
-              `Срок начала: ${fmtDate(bar.startDate)}`,
-              `Срок окончания: ${fmtDate(bar.endDate)}`,
-              `(за ${bar.daysLeft} дн. до запуска)`,
-              item.docLink ? `Документ: ${item.docLink}` : "",
-            ].filter(Boolean).join("\n")
+            const deptColor  = DEPT_COLORS[item.department] ?? "#6b7280"
+            const deptShort  = item.department
+              .replace("Управление ", "Упр. ")
+              .replace("Блок ", "")
+              .replace("Департамент ", "Деп. ")
+            const resp = item.responsible.split(" ")
+            const respShort = `${resp[0]} ${resp[1]?.[0] ?? ""}.`
 
             return (
               <div
                 key={item.id}
                 className={cn(
-                  "flex border-b border-border/40 hover:bg-muted/10 transition-colors group/row",
+                  "flex border-b border-border/40 hover:bg-muted/10 transition-colors",
                   idx % 2 === 1 && "bg-muted/5"
                 )}
                 style={{ height: ROW_H }}
-                title={tooltipText}
               >
-                {/* Label column: status icon + name + dept color strip */}
+                {/* Label column */}
                 <div
-                  className="flex items-center gap-2 px-3 border-r border-border/40 flex-shrink-0 min-w-0"
+                  className="flex items-center gap-1.5 px-2 border-r border-border/40 flex-shrink-0 min-w-0"
                   style={{ width: LABEL_COL }}
                 >
-                  {/* dept color strip */}
+                  {/* Dept color strip */}
                   <div className="w-0.5 self-stretch flex-shrink-0 rounded-full my-1.5" style={{ background: deptColor }} />
-                  {/* status icon */}
+                  {/* Status icon */}
                   <div className="flex-shrink-0">
                     {status === "done"
-                      ? <CheckCircle2 className="size-3.5 text-green-600" />
+                      ? <CheckCircle2 className="size-3 text-green-600" />
                       : status === "critical"
-                        ? <XCircle className="size-3.5 text-red-600" />
-                        : <Clock className="size-3.5 text-gray-400" />
+                        ? <XCircle className="size-3 text-red-600" />
+                        : <Clock className="size-3 text-gray-400" />
                     }
                   </div>
-                  {/* name */}
-                  <span className="text-[11px] text-foreground leading-tight truncate flex-1" title={item.requirement}>
-                    {item.requirement}
-                  </span>
-                  {/* info badge shown on hover */}
-                  <div className="flex-shrink-0 opacity-0 group-hover/row:opacity-100 transition-opacity flex items-center gap-0.5">
-                    {item.docLink && (
-                      <a
-                        href={item.docLink}
-                        onClick={(e) => e.stopPropagation()}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:text-primary/80"
-                        title="Открыть документ"
-                      >
-                        <ExternalLink className="size-3" />
-                      </a>
-                    )}
-                    <span className="text-[9px] text-muted-foreground font-mono">
-                      {item.responsible.split(" ")[0]} {item.responsible.split(" ")[1]?.[0]}.
+                  {/* Name + meta row */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-center gap-0">
+                    <span className="text-[11px] text-foreground leading-tight truncate" title={item.requirement}>
+                      {item.requirement}
                     </span>
+                    {/* Meta: dept · responsible · dates · link — all on one line */}
+                    <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+                      <span className="text-[8px] font-medium truncate shrink-0 max-w-[100px]" style={{ color: deptColor }}>{deptShort}</span>
+                      <span className="text-[8px] text-muted-foreground/60">·</span>
+                      <span className="text-[8px] text-muted-foreground font-mono shrink-0">{respShort}</span>
+                      <span className="text-[8px] text-muted-foreground/60">·</span>
+                      <span className="text-[8px] text-muted-foreground font-mono shrink-0 whitespace-nowrap">
+                        {fmtDate(bar.startDate).slice(0,5)} – {fmtDate(bar.endDate).slice(0,5)}
+                      </span>
+                      {item.docLink && (
+                        <>
+                          <span className="text-[8px] text-muted-foreground/60">·</span>
+                          <a
+                            href={item.docLink}
+                            onClick={(e) => e.stopPropagation()}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:text-primary/70 shrink-0"
+                            title="Открыть документ"
+                          >
+                            <ExternalLink className="size-2.5" />
+                          </a>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -400,7 +406,7 @@ function ChecklistGantt({ obj, onClose }: ChecklistGanttProps) {
                       left:       `${Math.max(0, bar.barStartPct).toFixed(2)}%`,
                       width:      `${Math.max(0.5, Math.min(bar.barWidthPct, 100 - Math.max(0, bar.barStartPct))).toFixed(2)}%`,
                       top:        "50%",
-                      height:     16,
+                      height:     10,
                       transform:  "translateY(-50%)",
                       background: bar.barColor,
                       opacity:    status === "pending" ? 0.45 : 0.85,
