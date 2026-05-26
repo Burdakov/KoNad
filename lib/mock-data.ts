@@ -1213,7 +1213,7 @@ export const reportingObligations: ReportingObligation[] = [
     deadline: "01.02.2026",
     submittedDate: "31.01.2026",
     status: "warning",
-    discrepancy: "Фонд бездейству��щих скважин расходится с данными ИС ИПР на 3 единицы",
+    discrepancy: "Фонд бездейству���щих скважин расходится с данными ИС ИПР на 3 единицы",
     comment: "Отчёт в срок, выявлены расхождения с системой ИПР по бездействующему фонду.",
   },
   {
@@ -1486,7 +1486,7 @@ export const masterfileWells: MasterfileWell[] = [
     id: "pw1", wellName: "18Б-1", dataType: "plan", wellStatus: "producing", wellStatusLabel: "Плановый запуск",
     wellType: "production", wellTypeLabel: "Добывающая",
     clusterId: "pmc1", clusterName: "Куст 18Б", fieldId: "mf1", fieldName: "Западно-Сибирское",
-    company: "ООО «НефтьГаз-Запад��", launchDate: "",
+    company: "ООО «НефтьГаз-З��пад��", launchDate: "",
     plannedLaunchDate: "01.09.2026", plannedOilRate: 52.0, plannedOilYear: 8.2,
     oilCumTst: 0, oilRateToday: null, lastMeasured: "",
     docCoverage: { spatial: false, tsr: true, land: false, opo: false, ker: false, conservation: true, license: true, reporting: false, hydro: false },
@@ -1704,7 +1704,7 @@ export const roadmapTemplates: Record<RoadmapModule, { title: string; steps: Roa
   opo: {
     title: "Получение разрешения на эксплуатацию ОПО",
     steps: [
-      { order: 1, action: "Провести идентификацию объекта как ОПО, определит�� класс опасности (I–IV)", department: "Служба промышленной безопасности", daysToComplete: 10 },
+      { order: 1, action: "Провести идентификацию объек��а как ОПО, определит�� класс опасности (I–IV)", department: "Служба промышленной безопасности", daysToComplete: 10 },
       { order: 2, action: "Разработать декларацию промышленной безопасности (если класс I–II)", department: "Служба ПБ / проектная организация", daysToComplete: 30 },
       { order: 3, action: "Поставить объект на учёт в Ростехнадзор (ФГИС ОПО)", department: "Служба ПБ", daysToComplete: 15 },
       { order: 4, action: "Провести первичный технический осмотр / экспертизу промышленной безопасности", department: "Аккредитованная экспертная организация", daysToComplete: 20 },
@@ -1879,7 +1879,7 @@ export const masterfilePlanWells2027 = masterfileWells.filter(
   (w) => w.dataType === "plan" && w.plannedLaunchDate?.endsWith("2027"),
 )
 
-/** Только фактические кусты */
+/** ��олько фактические кусты */
 export const masterfileFactClusters = masterfileClusters.filter((c) => c.dataType === "fact")
 /** Плановые кусты 2026 */
 export const masterfilePlanClusters2026 = masterfileClusters.filter(
@@ -2225,7 +2225,7 @@ export const hydroDocs: HydroDocument[] = [
     comment: "Устаревший подсчёт запасов — 9 лет без переоценки. Добыча с 2017 г. составила 40% от начальных запасов. Требуется пересчёт.",
     isWaterDoc: false,
   },
-  // ── ТСР (вода) ──────────────────────────────────────────────────────────────
+  // ── ТСР (вода) ─────────────────────���────────────────────────────────────────
   {
     id: "hd5", company: "АО «СеверДобыча»", fieldId: "mf3", fieldName: "Арктическое",
     docType: "tsr_water", docTypeLabel: "ТСР (разработка водонасыщенных пластов)",
@@ -2558,3 +2558,363 @@ export function buildAllLaunchGanttRows(): GanttRow[] {
   }
   return rows
 }
+
+// ──────────────────────────────────────────────────────────────────────────────
+// ДФ25 CHECKLIST — Требования к запуску новых кустовых площадок
+// ──────────────────────────────────────────────────────────────────────────────
+
+export type ChecklistStatus = "done" | "pending" | "critical"
+
+export interface DF25Requirement {
+  id: string
+  category: string
+  department: string
+  requirement: string
+  basis: string
+  /** How many calendar days before planned launch this must be done */
+  daysBeforeLaunch: number
+}
+
+export interface ClusterChecklistItem {
+  requirementId: string
+  clusterId: string
+  status: ChecklistStatus
+  completedDate?: string
+  note?: string
+}
+
+export const df25Requirements: DF25Requirement[] = [
+  // ── Земельные отношения ────────────────────────────────────────────────────
+  { id: "df01", category: "Земельные отношения", department: "Отдел земельных отношений",
+    requirement: "Оформление права пользования земельным участком (договор аренды / сервитут)", basis: "ЗК РФ, ст. 22", daysBeforeLaunch: 90 },
+  { id: "df02", category: "Земельные отношения", department: "Отдел земельных отношений",
+    requirement: "Согласование землеотводного акта с уполномоченным органом", basis: "ПП РФ № 687", daysBeforeLaunch: 60 },
+  { id: "df03", category: "Земельные отношения", department: "Отдел земельных отношений",
+    requirement: "Передача земельного участка по акту приёма-передачи", basis: "ГК РФ, ст. 655", daysBeforeLaunch: 14 },
+
+  // ── Недропользование ──────────────────────────────────────────────────────
+  { id: "df04", category: "Недропользование", department: "Отдел лицензирования недр",
+    requirement: "Внесение нового куста в рабочий проект / техническую схему разработки (ТСР)", basis: "Приказ МПР № 639", daysBeforeLaunch: 120 },
+  { id: "df05", category: "Недропользование", department: "Отдел лицензирования недр",
+    requirement: "Согласование плана развития горных работ (ПРГР) на год", basis: "ПП РФ № 814", daysBeforeLaunch: 90 },
+  { id: "df06", category: "Недропользование", department: "Отдел лицензирования недр",
+    requirement: "Уведомление Роснедра о начале строительства скважин", basis: "ФЗ «О недрах», ст. 23.2", daysBeforeLaunch: 30 },
+
+  // ── Пространственные документы ────────────────────────────────────────────
+  { id: "df07", category: "Пространственные документы", department: "Отдел пространственного анализа",
+    requirement: "Проверка наличия промышленных категорий запасов по проектному фонду (В1+В2)", basis: "Приказ МПР № 9", daysBeforeLaunch: 120 },
+  { id: "df08", category: "Пространственные документы", department: "Отдел пространственного анализа",
+    requirement: "Пространственная привязка куста к горному отводу (попадание в контур)", basis: "ФЗ «О недрах», ст. 7", daysBeforeLaunch: 90 },
+  { id: "df09", category: "Пространственные документы", department: "Отдел пространственного анализа",
+    requirement: "Актуализация векторного контура запасов по новым скважинам", basis: "Методика ГКЗ, п. 4.2", daysBeforeLaunch: 60 },
+
+  // ── Промышленная безопасность ─────────────────────────────────────────────
+  { id: "df10", category: "Промышленная безопасность", department: "Отдел ОПО",
+    requirement: "Регистрация опасного производственного объекта (ОПО) в Ростехнадзоре", basis: "ФЗ № 116, ст. 2", daysBeforeLaunch: 60 },
+  { id: "df11", category: "Промышленная безопасность", department: "Отдел ОПО",
+    requirement: "Получение лицензии на эксплуатацию ОПО", basis: "ФЗ № 116, ст. 9", daysBeforeLaunch: 60 },
+  { id: "df12", category: "Промышленная безопасность", department: "Отдел ОПО",
+    requirement: "Страхование гражданской ответственности владельца ОПО", basis: "ФЗ № 225", daysBeforeLaunch: 30 },
+  { id: "df13", category: "Промышленная безопасность", department: "Отдел ОПО",
+    requirement: "Разработка и экспертиза декларации промышленной безопасности", basis: "ФЗ № 116, ст. 14", daysBeforeLaunch: 90 },
+
+  // ── Экология ─────────────────────────────────────────────────────────────
+  { id: "df14", category: "Экология", department: "Отдел экологии",
+    requirement: "Включение нового объекта в КЭР (или получение разрешения на выброс)", basis: "ФЗ № 96, ст. 14", daysBeforeLaunch: 120 },
+  { id: "df15", category: "Экология", department: "Отдел экологии",
+    requirement: "Разработка тома ПДВ / НДС по новому объекту", basis: "ПП РФ № 1418", daysBeforeLaunch: 90 },
+  { id: "df16", category: "Экология", department: "Отдел экологии",
+    requirement: "Постановка на учёт источников НВОС в Роснадзоре", basis: "ФЗ № 7, ст. 69.2", daysBeforeLaunch: 30 },
+
+  // ── Гидрогеология ────────────────────────────────────────────────────────
+  { id: "df17", category: "Гидрогеология", department: "Отдел гидрогеологии",
+    requirement: "Наличие утверждённых запасов подземных вод (ГКЗ/ТКЗ) по водозаборным скважинам", basis: "ФЗ «О недрах», ст. 29", daysBeforeLaunch: 120 },
+  { id: "df18", category: "Гидрогеология", department: "Отдел гидрогеологии",
+    requirement: "Проект водозабора и разрешение на водопользование (сброс пластовых вод)", basis: "ВК РФ, ст. 11", daysBeforeLaunch: 90 },
+  { id: "df19", category: "Гидрогеология", department: "Отдел гидрогеологии",
+    requirement: "Согласование проекта ЗСО (зона санитарной охраны) водозабора", basis: "СанПиН 2.1.4.1110-02", daysBeforeLaunch: 60 },
+
+  // ── Строительный надзор ───────────────────────────────────────────────────
+  { id: "df20", category: "Строительный надзор", department: "Отдел капитального строительства",
+    requirement: "Получение разрешения на строительство скважин и объектов куста", basis: "ГрК РФ, ст. 51", daysBeforeLaunch: 90 },
+  { id: "df21", category: "Строительный надзор", department: "Отдел капитального строительства",
+    requirement: "Прохождение государственной экспертизы проектной документации", basis: "ГрК РФ, ст. 49", daysBeforeLaunch: 120 },
+  { id: "df22", category: "Строительный надзор", department: "Отдел капитального строительства",
+    requirement: "Уведомление стройнадзора о начале строительства", basis: "ГрК РФ, ст. 52", daysBeforeLaunch: 7 },
+
+  // ── Технологическое присоединение ────────────────────────────────────────
+  { id: "df23", category: "Технологическое присоединение", department: "Отдел технологии",
+    requirement: "Согласование технического задания на проектирование системы сбора", basis: "ПП РФ № 861", daysBeforeLaunch: 120 },
+  { id: "df24", category: "Технологическое присоединение", department: "Отдел технологии",
+    requirement: "Подписание акта о технологическом присоединении к трубопроводной системе", basis: "ФЗ № 69, ст. 22.1", daysBeforeLaunch: 14 },
+  { id: "df25", category: "Технологическое присоединение", department: "Отдел технологии",
+    requirement: "Испытание трубопроводов и систем под давлением (гидроиспытания)", basis: "ГОСТ Р 54382-2011", daysBeforeLaunch: 21 },
+
+  // ── Отчётность ────────────────────────────────────────────────────────────
+  { id: "df26", category: "Отчётность", department: "Отдел государственной отчётности",
+    requirement: "Включение нового куста в отчёт 6-ГР (баланс нефти на государственном мониторинге)", basis: "Приказ Роснедра № 356", daysBeforeLaunch: 30 },
+  { id: "df27", category: "Отчётность", department: "Отдел государственной отчётности",
+    requirement: "Регистрация в системе Росгеолфонд (паспорт куста)", basis: "ПП РФ № 411", daysBeforeLaunch: 30 },
+
+  // ── Инфраструктура (ДФ25) ─────────────────────────────────────────────────
+  { id: "df28", category: "Инфраструктура (ДФ25)", department: "Отдел инфраструктуры",
+    requirement: "Готовность дороги к кусту (проезд, насыпь, искусственные сооружения)", basis: "ДФ25, п. 3.1", daysBeforeLaunch: 30 },
+  { id: "df29", category: "Инфраструктура (ДФ25)", department: "Отдел инфраструктуры",
+    requirement: "Обустройство площадки куста (планировка, ограждение, вертолётная площадка)", basis: "ДФ25, п. 3.2", daysBeforeLaunch: 21 },
+  { id: "df30", category: "Инфраструктура (ДФ25)", department: "Отдел инфраструктуры",
+    requirement: "Монтаж и обвязка устьевого оборудования (фонтанная арматура)", basis: "ДФ25, п. 4.1", daysBeforeLaunch: 14 },
+  { id: "df31", category: "Инфраструктура (ДФ25)", department: "Отдел инфраструктуры",
+    requirement: "Пуско-наладочные работы на системах телемеханики и АСУТП", basis: "ДФ25, п. 4.2", daysBeforeLaunch: 7 },
+]
+
+/** Per-cluster checklist items (status of each DF25 requirement for each plan cluster) */
+export const clusterChecklistItems: ClusterChecklistItem[] = [
+  // ── pmc1 (Куст 18Б, 2026) — partial readiness ─────────────────────────────
+  { requirementId: "df01", clusterId: "pmc1", status: "done", completedDate: "12.03.2026" },
+  { requirementId: "df02", clusterId: "pmc1", status: "done", completedDate: "01.04.2026" },
+  { requirementId: "df03", clusterId: "pmc1", status: "pending" },
+  { requirementId: "df04", clusterId: "pmc1", status: "done", completedDate: "10.01.2026" },
+  { requirementId: "df05", clusterId: "pmc1", status: "done", completedDate: "15.02.2026" },
+  { requirementId: "df06", clusterId: "pmc1", status: "pending" },
+  { requirementId: "df07", clusterId: "pmc1", status: "critical", note: "Промышленные категории не подтверждены по 2 скважинам" },
+  { requirementId: "df08", clusterId: "pmc1", status: "done", completedDate: "20.03.2026" },
+  { requirementId: "df09", clusterId: "pmc1", status: "pending" },
+  { requirementId: "df10", clusterId: "pmc1", status: "pending" },
+  { requirementId: "df11", clusterId: "pmc1", status: "pending" },
+  { requirementId: "df12", clusterId: "pmc1", status: "pending" },
+  { requirementId: "df13", clusterId: "pmc1", status: "critical", note: "Декларация ПБ не прошла экспертизу — возвращена на доработку" },
+  { requirementId: "df14", clusterId: "pmc1", status: "pending" },
+  { requirementId: "df15", clusterId: "pmc1", status: "done", completedDate: "05.04.2026" },
+  { requirementId: "df16", clusterId: "pmc1", status: "pending" },
+  { requirementId: "df17", clusterId: "pmc1", status: "done", completedDate: "10.02.2026" },
+  { requirementId: "df18", clusterId: "pmc1", status: "critical", note: "Разрешение водопользования истекло — на переоформлении" },
+  { requirementId: "df19", clusterId: "pmc1", status: "pending" },
+  { requirementId: "df20", clusterId: "pmc1", status: "done", completedDate: "18.04.2026" },
+  { requirementId: "df21", clusterId: "pmc1", status: "done", completedDate: "22.11.2025" },
+  { requirementId: "df22", clusterId: "pmc1", status: "pending" },
+  { requirementId: "df23", clusterId: "pmc1", status: "done", completedDate: "14.03.2026" },
+  { requirementId: "df24", clusterId: "pmc1", status: "pending" },
+  { requirementId: "df25", clusterId: "pmc1", status: "pending" },
+  { requirementId: "df26", clusterId: "pmc1", status: "pending" },
+  { requirementId: "df27", clusterId: "pmc1", status: "pending" },
+  { requirementId: "df28", clusterId: "pmc1", status: "done", completedDate: "01.05.2026" },
+  { requirementId: "df29", clusterId: "pmc1", status: "pending" },
+  { requirementId: "df30", clusterId: "pmc1", status: "pending" },
+  { requirementId: "df31", clusterId: "pmc1", status: "pending" },
+
+  // ── pmc2 (Куст 52Д, 2026) — mostly pending ────────────────────────────────
+  ...["df01","df02","df03","df04","df05","df06","df07","df08","df09","df10",
+      "df11","df12","df13","df14","df15","df16","df17","df18","df19","df20",
+      "df21","df22","df23","df24","df25","df26","df27","df28","df29","df30","df31"]
+    .map((rid): ClusterChecklistItem => ({
+      requirementId: rid,
+      clusterId: "pmc2",
+      status: ["df04","df21"].includes(rid) ? "done"
+            : ["df07","df13","df14"].includes(rid) ? "critical"
+            : "pending",
+      completedDate: rid === "df04" ? "05.12.2025" : rid === "df21" ? "10.01.2026" : undefined,
+    })),
+
+  // ── pmc3 (Куст 11Ж, 2027) — early stage ──────────────────────────────────
+  ...["df01","df02","df03","df04","df05","df06","df07","df08","df09","df10",
+      "df11","df12","df13","df14","df15","df16","df17","df18","df19","df20",
+      "df21","df22","df23","df24","df25","df26","df27","df28","df29","df30","df31"]
+    .map((rid): ClusterChecklistItem => ({
+      requirementId: rid,
+      clusterId: "pmc3",
+      status: ["df21","df23"].includes(rid) ? "done" : "pending",
+      completedDate: rid === "df21" ? "15.03.2026" : rid === "df23" ? "20.04.2026" : undefined,
+    })),
+
+  // ── pmc4/pmc5 — all pending ───────────────────────────────────────────────
+  ...["pmc4","pmc5"].flatMap((cid) =>
+    ["df01","df02","df03","df04","df05","df06","df07","df08","df09","df10",
+     "df11","df12","df13","df14","df15","df16","df17","df18","df19","df20",
+     "df21","df22","df23","df24","df25","df26","df27","df28","df29","df30","df31"]
+    .map((rid): ClusterChecklistItem => ({ requirementId: rid, clusterId: cid, status: "pending" }))
+  ),
+]
+
+// ──────────────────────────────────────────────────────────────────────────────
+// WATER WELLS (Водозаборные скважины) for Гидрогеология
+// ──────────────────────────────────────────────────────────────────────────────
+
+export interface WaterWell {
+  id: string
+  wellName: string
+  fieldId: string
+  fieldName: string
+  company: string
+  wellType: "water_supply" | "disposal" | "observation"
+  wellTypeLabel: string
+  aquifer: string
+  depth: number
+  /** year commissioned */
+  commissionYear: number
+  status: "active" | "idle" | "liquidated"
+  docCoverage: {
+    reserves: boolean
+    tsr_water: boolean
+    pgin: boolean
+    water_placement: boolean
+  }
+}
+
+export const waterWells: WaterWell[] = [
+  { id: "ww1", wellName: "ВЗС-1/3", fieldId: "mf1", fieldName: "Западно-Сибирское", company: "ООО «НефтьГаз-Запад»",
+    wellType: "water_supply", wellTypeLabel: "Водозаборная", aquifer: "Атлымская свита", depth: 142, commissionYear: 2019, status: "active",
+    docCoverage: { reserves: true, tsr_water: true, pgin: true, water_placement: false } },
+  { id: "ww2", wellName: "ВЗС-2/3", fieldId: "mf1", fieldName: "Западно-Сибирское", company: "ООО «НефтьГаз-Запад»",
+    wellType: "water_supply", wellTypeLabel: "Водозаборная", aquifer: "Атлымская свита", depth: 138, commissionYear: 2019, status: "active",
+    docCoverage: { reserves: true, tsr_water: false, pgin: true, water_placement: false } },
+  { id: "ww3", wellName: "ВЗС-1/Сев", fieldId: "mf2", fieldName: "Северное", company: "ООО «НефтьГаз-Запад»",
+    wellType: "water_supply", wellTypeLabel: "Водозаборная", aquifer: "Новомихайловская свита", depth: 185, commissionYear: 2021, status: "active",
+    docCoverage: { reserves: false, tsr_water: false, pgin: false, water_placement: false } },
+  { id: "ww4", wellName: "ПРВ-1/Арк", fieldId: "mf3", fieldName: "Арктическое", company: "АО «СеверДобыча»",
+    wellType: "disposal", wellTypeLabel: "Поглощающая (ПРВ)", aquifer: "Нижнехетская свита", depth: 2340, commissionYear: 2020, status: "active",
+    docCoverage: { reserves: true, tsr_water: true, pgin: true, water_placement: true } },
+  { id: "ww5", wellName: "ПРВ-2/Арк", fieldId: "mf3", fieldName: "Арктическое", company: "АО «СеверДобыча»",
+    wellType: "disposal", wellTypeLabel: "Поглощающая (ПРВ)", aquifer: "Нижнехетская свита", depth: 2290, commissionYear: 2021, status: "active",
+    docCoverage: { reserves: true, tsr_water: true, pgin: false, water_placement: true } },
+  { id: "ww6", wellName: "НБЛ-1/Цент", fieldId: "mf4", fieldName: "Центральное", company: "ПАО «ТюменьРесурс»",
+    wellType: "observation", wellTypeLabel: "Наблюдательная", aquifer: "Покурская свита", depth: 420, commissionYear: 2018, status: "active",
+    docCoverage: { reserves: true, tsr_water: true, pgin: true, water_placement: true } },
+]
+
+// ──────────────────────────────────────────────────────────────────────────────
+// EMISSION COMPOSITION PROTOCOLS — Квартальные протоколы составов выбросов
+// ──────────────────────────────────────────────────────────────────────────────
+
+export interface PollutantMeasurement {
+  substance: string
+  /** мг/м³ */
+  measured: number
+  /** ПДВ мг/м³ — разовый предельный норматив */
+  limitPdv: number
+  /** 0–1 ratio of measured/limitPdv */
+  ratio: number
+  unit: "мг/м³" | "мг/нм³" | "%"
+}
+
+export interface EmissionProtocol {
+  id: string
+  fieldId: string
+  fieldName: string
+  company: string
+  source: string
+  sourceType: "flare" | "compressor" | "separator" | "tank"
+  quarter: "Q3-2025" | "Q4-2025" | "Q1-2026"
+  date: string
+  docRef: string
+  pollutants: PollutantMeasurement[]
+}
+
+export const emissionProtocols: EmissionProtocol[] = [
+  // ── Арктическое — ФУ-3 (факел) ───────────────────────────────────────────
+  {
+    id: "ep1", fieldId: "mf3", fieldName: "Арктическое", company: "АО «СеверДобыча»",
+    source: "ФУ-3 (факел)", sourceType: "flare", quarter: "Q3-2025", date: "15.09.2025",
+    docRef: "АРК-ФУ3-Q3-2025",
+    pollutants: [
+      { substance: "SO₂", measured: 0.48, limitPdv: 0.5, ratio: 0.96, unit: "мг/м³" },
+      { substance: "NOx", measured: 0.32, limitPdv: 0.6, ratio: 0.53, unit: "мг/м³" },
+      { substance: "CO", measured: 3.8, limitPdv: 5.0, ratio: 0.76, unit: "мг/м³" },
+      { substance: "CH₄", measured: 1.2, limitPdv: 50.0, ratio: 0.024, unit: "мг/м³" },
+      { substance: "H₂S", measured: 0.005, limitPdv: 0.008, ratio: 0.625, unit: "мг/м³" },
+    ],
+  },
+  {
+    id: "ep2", fieldId: "mf3", fieldName: "Арктическое", company: "АО «СеверДобыча»",
+    source: "ФУ-3 (факел)", sourceType: "flare", quarter: "Q4-2025", date: "12.12.2025",
+    docRef: "АРК-ФУ3-Q4-2025",
+    pollutants: [
+      { substance: "SO₂", measured: 0.52, limitPdv: 0.5, ratio: 1.04, unit: "мг/м³" },
+      { substance: "NOx", measured: 0.38, limitPdv: 0.6, ratio: 0.63, unit: "мг/м³" },
+      { substance: "CO", measured: 4.2, limitPdv: 5.0, ratio: 0.84, unit: "мг/м³" },
+      { substance: "CH₄", measured: 1.5, limitPdv: 50.0, ratio: 0.03, unit: "мг/м³" },
+      { substance: "H₂S", measured: 0.009, limitPdv: 0.008, ratio: 1.125, unit: "мг/м³" },
+    ],
+  },
+  {
+    id: "ep3", fieldId: "mf3", fieldName: "Арктическое", company: "АО «СеверДобыча»",
+    source: "ФУ-3 (факел)", sourceType: "flare", quarter: "Q1-2026", date: "18.03.2026",
+    docRef: "АРК-ФУ3-Q1-2026",
+    pollutants: [
+      { substance: "SO₂", measured: 0.61, limitPdv: 0.5, ratio: 1.22, unit: "мг/м³" },
+      { substance: "NOx", measured: 0.44, limitPdv: 0.6, ratio: 0.73, unit: "мг/м³" },
+      { substance: "CO", measured: 4.9, limitPdv: 5.0, ratio: 0.98, unit: "мг/м³" },
+      { substance: "CH₄", measured: 1.8, limitPdv: 50.0, ratio: 0.036, unit: "мг/м³" },
+      { substance: "H₂S", measured: 0.011, limitPdv: 0.008, ratio: 1.375, unit: "мг/м³" },
+    ],
+  },
+
+  // ── Западно-Сибирское — КС-2 (компрессор) ────────────────────────────────
+  {
+    id: "ep4", fieldId: "mf1", fieldName: "Западно-Сибирское", company: "ООО «НефтьГаз-Запад»",
+    source: "КС-2 (компрессорная)", sourceType: "compressor", quarter: "Q3-2025", date: "22.09.2025",
+    docRef: "ЗС-КС2-Q3-2025",
+    pollutants: [
+      { substance: "SO₂", measured: 0.18, limitPdv: 0.5, ratio: 0.36, unit: "мг/м³" },
+      { substance: "NOx", measured: 0.41, limitPdv: 0.6, ratio: 0.68, unit: "мг/м³" },
+      { substance: "CO", measured: 2.1, limitPdv: 5.0, ratio: 0.42, unit: "мг/м³" },
+      { substance: "CH₄", measured: 0.8, limitPdv: 50.0, ratio: 0.016, unit: "мг/м³" },
+    ],
+  },
+  {
+    id: "ep5", fieldId: "mf1", fieldName: "Западно-Сибирское", company: "ООО «НефтьГаз-Запад»",
+    source: "КС-2 (компрессорная)", sourceType: "compressor", quarter: "Q4-2025", date: "18.12.2025",
+    docRef: "ЗС-КС2-Q4-2025",
+    pollutants: [
+      { substance: "SO₂", measured: 0.22, limitPdv: 0.5, ratio: 0.44, unit: "мг/м³" },
+      { substance: "NOx", measured: 0.43, limitPdv: 0.6, ratio: 0.72, unit: "мг/м³" },
+      { substance: "CO", measured: 2.4, limitPdv: 5.0, ratio: 0.48, unit: "мг/м³" },
+      { substance: "CH₄", measured: 0.9, limitPdv: 50.0, ratio: 0.018, unit: "мг/м³" },
+    ],
+  },
+  {
+    id: "ep6", fieldId: "mf1", fieldName: "Западно-Сибирское", company: "ООО «НефтьГаз-Запад»",
+    source: "КС-2 (компрессорная)", sourceType: "compressor", quarter: "Q1-2026", date: "25.03.2026",
+    docRef: "ЗС-КС2-Q1-2026",
+    pollutants: [
+      { substance: "SO₂", measured: 0.24, limitPdv: 0.5, ratio: 0.48, unit: "мг/м³" },
+      { substance: "NOx", measured: 0.55, limitPdv: 0.6, ratio: 0.92, unit: "мг/м³" },
+      { substance: "CO", measured: 2.8, limitPdv: 5.0, ratio: 0.56, unit: "мг/м³" },
+      { substance: "CH₄", measured: 1.1, limitPdv: 50.0, ratio: 0.022, unit: "мг/м³" },
+    ],
+  },
+
+  // ── Северное — СП-1 (сепаратор) ──────────────────────────────────────────
+  {
+    id: "ep7", fieldId: "mf2", fieldName: "Северное", company: "ООО «НефтьГаз-Запад»",
+    source: "СП-1 (сепаратор)", sourceType: "separator", quarter: "Q3-2025", date: "10.09.2025",
+    docRef: "СЕВ-СП1-Q3-2025",
+    pollutants: [
+      { substance: "SO₂", measured: 0.08, limitPdv: 0.5, ratio: 0.16, unit: "мг/м³" },
+      { substance: "NOx", measured: 0.15, limitPdv: 0.6, ratio: 0.25, unit: "мг/м³" },
+      { substance: "CO", measured: 1.2, limitPdv: 5.0, ratio: 0.24, unit: "мг/м³" },
+      { substance: "CH₄", measured: 2.4, limitPdv: 50.0, ratio: 0.048, unit: "мг/м³" },
+    ],
+  },
+  {
+    id: "ep8", fieldId: "mf2", fieldName: "Северное", company: "ООО «НефтьГаз-Запад»",
+    source: "СП-1 (сепаратор)", sourceType: "separator", quarter: "Q4-2025", date: "08.12.2025",
+    docRef: "СЕВ-СП1-Q4-2025",
+    pollutants: [
+      { substance: "SO₂", measured: 0.09, limitPdv: 0.5, ratio: 0.18, unit: "мг/м³" },
+      { substance: "NOx", measured: 0.17, limitPdv: 0.6, ratio: 0.28, unit: "мг/м³" },
+      { substance: "CO", measured: 1.4, limitPdv: 5.0, ratio: 0.28, unit: "мг/м³" },
+      { substance: "CH₄", measured: 2.8, limitPdv: 50.0, ratio: 0.056, unit: "мг/м³" },
+    ],
+  },
+  {
+    id: "ep9", fieldId: "mf2", fieldName: "Северное", company: "ООО «НефтьГаз-Запад»",
+    source: "СП-1 (сепаратор)", sourceType: "separator", quarter: "Q1-2026", date: "14.03.2026",
+    docRef: "СЕВ-СП1-Q1-2026",
+    pollutants: [
+      { substance: "SO₂", measured: 0.11, limitPdv: 0.5, ratio: 0.22, unit: "мг/м³" },
+      { substance: "NOx", measured: 0.19, limitPdv: 0.6, ratio: 0.32, unit: "мг/м³" },
+      { substance: "CO", measured: 1.6, limitPdv: 5.0, ratio: 0.32, unit: "мг/м³" },
+      { substance: "CH₄", measured: 3.1, limitPdv: 50.0, ratio: 0.062, unit: "мг/м³" },
+    ],
+  },
+]
