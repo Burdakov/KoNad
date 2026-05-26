@@ -15,7 +15,7 @@ import {
 import {
   CheckCircle2, Clock, XCircle, ChevronDown,
   Factory, Drill, Flame, Waves, AlertTriangle,
-  User, Building2, CalendarRange, Link2, ExternalLink,
+  ExternalLink,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -52,8 +52,8 @@ const CANVAS_MIN_W = 640
 // Checklist panel: show 7 months before launch
 const PANEL_MONTHS = 7
 
-// Row height in the checklist gantt (px) — tall enough for the extra fields
-const ROW_H = 72
+// Row height in the checklist gantt (px) — compact single-line
+const ROW_H = 36
 
 // Dependencies: r26 → r27 → r28 (Подсчёт запасов → Техсхема → ПРГР)
 // Each entry: { from: itemId, to: itemId }
@@ -194,14 +194,12 @@ function ChecklistGantt({ obj, onClose }: ChecklistGanttProps) {
   }, [ganttStart, ganttDays, launchDate])
 
   // Layout constants
-  const LABEL_COL = 260   // px — checklist label column
-  const INFO_COL  = 320   // px — dept / responsible / dates / link column
-  const GANTT_COL = 440   // px — gantt bar column (min)
-  const HEADER_H  = 32    // px
+  const LABEL_COL = 280   // px — checklist label column (includes dept/responsible)
+  const GANTT_COL = 560   // px — gantt bar column (wider for readability)
+  const HEADER_H  = 28    // px
 
   // SVG arrow layer: dependency lines
   // We need to compute bar end-x for each item to draw FS arrows
-  // barEndX (relative to gantt column) = (barStartPct + barWidthPct) / 100 * GANTT_COL
   const svgArrows = useMemo(() => {
     return DEPENDENCIES.map(({ from, to }) => {
       const fromIdx = df25ChecklistItems.findIndex((i) => i.id === from)
@@ -211,10 +209,8 @@ function ChecklistGantt({ obj, onClose }: ChecklistGanttProps) {
       const fromBar = bars[fromIdx]
       const toBar   = bars[toIdx]
 
-      // x positions relative to gantt column start
       const x1 = ((fromBar.barStartPct + fromBar.barWidthPct) / 100) * GANTT_COL
       const x2 = (toBar.barStartPct / 100) * GANTT_COL
-      // y positions: center of each row (HEADER_H + idx * ROW_H + ROW_H/2)
       const y1 = HEADER_H + fromIdx * ROW_H + ROW_H / 2
       const y2 = HEADER_H + toIdx   * ROW_H + ROW_H / 2
 
@@ -258,8 +254,8 @@ function ChecklistGantt({ obj, onClose }: ChecklistGanttProps) {
       </div>
 
       {/* Scrollable table */}
-      <div className="overflow-x-auto overflow-y-auto" style={{ maxHeight: 520 }}>
-        <div style={{ minWidth: LABEL_COL + INFO_COL + GANTT_COL, position: "relative" }}>
+      <div className="overflow-x-auto overflow-y-auto" style={{ maxHeight: 680 }}>
+        <div style={{ minWidth: LABEL_COL + GANTT_COL, position: "relative" }}>
 
           {/* Column headers */}
           <div
@@ -268,9 +264,6 @@ function ChecklistGantt({ obj, onClose }: ChecklistGanttProps) {
           >
             <div className="flex items-center px-3 border-r border-border flex-shrink-0" style={{ width: LABEL_COL }}>
               Требование
-            </div>
-            <div className="flex items-center px-3 border-r border-border flex-shrink-0" style={{ width: INFO_COL }}>
-              Подразделение · Ответственный · Сроки
             </div>
             <div className="flex-1 relative" style={{ minWidth: GANTT_COL }}>
               {/* Month ticks */}
@@ -295,7 +288,7 @@ function ChecklistGantt({ obj, onClose }: ChecklistGanttProps) {
           <svg
             className="absolute pointer-events-none z-10"
             style={{
-              left: LABEL_COL + INFO_COL,
+              left: LABEL_COL,
               top: 0,
               width: GANTT_COL,
               height: totalHeight,
@@ -330,22 +323,35 @@ function ChecklistGantt({ obj, onClose }: ChecklistGanttProps) {
           {df25ChecklistItems.map((item, idx) => {
             const bar    = bars[idx]
             const status = bar.status
+            const deptColor = DEPT_COLORS[item.department] ?? "#6b7280"
+            const tooltipText = [
+              `Подразделение: ${item.department}`,
+              `Ответственный: ${item.responsible}`,
+              `Срок начала: ${fmtDate(bar.startDate)}`,
+              `Срок окончания: ${fmtDate(bar.endDate)}`,
+              `(за ${bar.daysLeft} дн. до запуска)`,
+              item.docLink ? `Документ: ${item.docLink}` : "",
+            ].filter(Boolean).join("\n")
 
             return (
               <div
                 key={item.id}
                 className={cn(
-                  "flex border-b border-border/40 hover:bg-muted/10 transition-colors",
+                  "flex border-b border-border/40 hover:bg-muted/10 transition-colors group/row",
                   idx % 2 === 1 && "bg-muted/5"
                 )}
                 style={{ height: ROW_H }}
+                title={tooltipText}
               >
-                {/* Requirement name + status icon */}
+                {/* Label column: status icon + name + dept color strip */}
                 <div
-                  className="flex items-start gap-2 px-3 py-2 border-r border-border/40 flex-shrink-0"
+                  className="flex items-center gap-2 px-3 border-r border-border/40 flex-shrink-0 min-w-0"
                   style={{ width: LABEL_COL }}
                 >
-                  <div className="flex-shrink-0 mt-0.5">
+                  {/* dept color strip */}
+                  <div className="w-0.5 self-stretch flex-shrink-0 rounded-full my-1.5" style={{ background: deptColor }} />
+                  {/* status icon */}
+                  <div className="flex-shrink-0">
                     {status === "done"
                       ? <CheckCircle2 className="size-3.5 text-green-600" />
                       : status === "critical"
@@ -353,58 +359,33 @@ function ChecklistGantt({ obj, onClose }: ChecklistGanttProps) {
                         : <Clock className="size-3.5 text-gray-400" />
                     }
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[11px] text-foreground leading-tight line-clamp-2" title={item.requirement}>
-                      {item.requirement}
-                    </p>
-                    <span
-                      className="inline-block mt-1 text-[9px] px-1 py-0.5 rounded-sm font-medium"
-                      style={{
-                        background: (DEPT_COLORS[item.department] ?? "#6b7280") + "18",
-                        color:       DEPT_COLORS[item.department] ?? "#6b7280",
-                      }}
-                    >
-                      {item.department.replace("Управление ", "Упр. ").replace("Блок ", "").replace("Департамент ", "Деп. ")}
+                  {/* name */}
+                  <span className="text-[11px] text-foreground leading-tight truncate flex-1" title={item.requirement}>
+                    {item.requirement}
+                  </span>
+                  {/* info badge shown on hover */}
+                  <div className="flex-shrink-0 opacity-0 group-hover/row:opacity-100 transition-opacity flex items-center gap-0.5">
+                    {item.docLink && (
+                      <a
+                        href={item.docLink}
+                        onClick={(e) => e.stopPropagation()}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:text-primary/80"
+                        title="Открыть документ"
+                      >
+                        <ExternalLink className="size-3" />
+                      </a>
+                    )}
+                    <span className="text-[9px] text-muted-foreground font-mono">
+                      {item.responsible.split(" ")[0]} {item.responsible.split(" ")[1]?.[0]}.
                     </span>
                   </div>
                 </div>
 
-                {/* Info column: responsible, dates, doc link */}
-                <div
-                  className="flex flex-col justify-center gap-0.5 px-3 py-1.5 border-r border-border/40 flex-shrink-0 text-[10px]"
-                  style={{ width: INFO_COL }}
-                >
-                  <div className="flex items-center gap-1 text-muted-foreground">
-                    <User className="size-2.5 flex-shrink-0" />
-                    <span className="truncate text-foreground">{item.responsible}</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-muted-foreground">
-                    <CalendarRange className="size-2.5 flex-shrink-0" />
-                    <span className="font-mono">{fmtDate(bar.startDate)}</span>
-                    <span>—</span>
-                    <span className="font-mono">{fmtDate(bar.endDate)}</span>
-                    <span className="text-muted-foreground/60">({bar.daysLeft} дн.)</span>
-                  </div>
-                  {item.docLink ? (
-                    <a
-                      href={item.docLink}
-                      className="flex items-center gap-1 text-primary hover:underline w-fit"
-                      onClick={(e) => e.stopPropagation()}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Link2 className="size-2.5" />
-                      <span>Документ</span>
-                      <ExternalLink className="size-2" />
-                    </a>
-                  ) : (
-                    <span className="text-muted-foreground/50 italic">нет ссылки</span>
-                  )}
-                </div>
-
                 {/* Gantt bar */}
                 <div className="flex-1 relative" style={{ minWidth: GANTT_COL }}>
-                  {/* Grid lines from months */}
+                  {/* Grid lines */}
                   {months.map((m) => (
                     <div
                       key={m.label}
@@ -412,22 +393,20 @@ function ChecklistGantt({ obj, onClose }: ChecklistGanttProps) {
                       style={{ left: `${m.offsetPct.toFixed(2)}%` }}
                     />
                   ))}
-
                   {/* Bar */}
                   <div
-                    className="absolute rounded-sm flex items-center px-1.5 overflow-hidden"
+                    className="absolute rounded-sm"
                     style={{
                       left:       `${Math.max(0, bar.barStartPct).toFixed(2)}%`,
                       width:      `${Math.max(0.5, Math.min(bar.barWidthPct, 100 - Math.max(0, bar.barStartPct))).toFixed(2)}%`,
                       top:        "50%",
-                      height:     20,
+                      height:     16,
                       transform:  "translateY(-50%)",
                       background: bar.barColor,
-                      opacity:    status === "pending" ? 0.5 : 0.85,
+                      opacity:    status === "pending" ? 0.45 : 0.85,
                     }}
                     title={`${item.requirement} · за ${bar.daysLeft} дн.`}
                   />
-
                   {/* Launch line */}
                   <div
                     className="absolute top-0 bottom-0 w-0.5 bg-red-400/30"
