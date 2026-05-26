@@ -669,6 +669,17 @@ export function ProgramGantt() {
     })
   }
 
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  // Auto-scroll the checklist panel into view when it opens
+  useEffect(() => {
+    if (selectedObj && panelRef.current) {
+      setTimeout(() => {
+        panelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+      }, 60)
+    }
+  }, [selectedObj])
+
   // Flatten rows in render order to know where to inject the panel
   type RowEntry =
     | { type: "field-header"; fieldName: string }
@@ -686,34 +697,36 @@ export function ProgramGantt() {
   }, [fieldGroups])
 
   return (
-    <div className="border border-border rounded-lg overflow-hidden bg-card">
-      <div className="overflow-x-auto overflow-y-auto" style={{ maxHeight: 560 }}>
-        <div style={{ minWidth: LABEL_W + CANVAS_MIN_W }}>
-          <MonthHeader />
+    <div className="flex flex-col gap-0">
+      {/* ── Timeline (scrollable) ── */}
+      <div className="border border-border rounded-lg overflow-hidden bg-card">
+        <div className="overflow-x-auto overflow-y-auto" style={{ maxHeight: 440 }}>
+          <div style={{ minWidth: LABEL_W + CANVAS_MIN_W }}>
+            <MonthHeader />
 
-          {rows.map((row, rowIdx) => {
-            if (row.type === "field-header") {
-              return (
-                <div
-                  key={`fh-${row.fieldName}`}
-                  className="flex items-center border-b border-border bg-muted/60 px-3 py-1 sticky z-10"
-                  style={{ top: 28, minWidth: LABEL_W + CANVAS_MIN_W }}
-                >
-                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{row.fieldName}</span>
-                </div>
-              )
-            }
+            {rows.map((row) => {
+              if (row.type === "field-header") {
+                return (
+                  <div
+                    key={`fh-${row.fieldName}`}
+                    className="flex items-center border-b border-border bg-muted/60 px-3 py-1 sticky z-10"
+                    style={{ top: 28, minWidth: LABEL_W + CANVAS_MIN_W }}
+                  >
+                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{row.fieldName}</span>
+                  </div>
+                )
+              }
 
-            if (row.type === "infra") {
-              const inf   = row.obj
-              const stats = infraStats(inf)
-              const ls    = launchStatus(parseDate(inf.plannedLaunchDate))
-              const panelObj: PanelObject = { kind: "infra", data: inf }
-              const isSelected = selectedObj?.kind === "infra" && selectedObj.data.id === inf.id
+              if (row.type === "infra") {
+                const inf      = row.obj
+                const stats    = infraStats(inf)
+                const ls       = launchStatus(parseDate(inf.plannedLaunchDate))
+                const panelObj: PanelObject = { kind: "infra", data: inf }
+                const isSelected = selectedObj?.kind === "infra" && selectedObj.data.id === inf.id
 
-              return (
-                <div key={`inf-${inf.id}`}>
+                return (
                   <TimelineRow
+                    key={`inf-${inf.id}`}
                     label={inf.name}
                     sublabel={inf.company}
                     typeLabel={inf.typeLabel}
@@ -726,23 +739,19 @@ export function ProgramGantt() {
                     onClick={() => handleSelect(panelObj)}
                     barColor="#0891b2"
                   />
-                  {isSelected && (
-                    <ChecklistGantt obj={panelObj} onClose={() => setSelectedObj(null)} />
-                  )}
-                </div>
-              )
-            }
+                )
+              }
 
-            // cluster
-            const cls   = row.obj
-            const stats = clusterStats(cls.id)
-            const ls    = launchStatus(parseDate(cls.plannedLaunchDate ?? "01.12.2026"))
-            const panelObj: PanelObject = { kind: "cluster", data: cls }
-            const isSelected = selectedObj?.kind === "cluster" && selectedObj.data.id === cls.id
+              // cluster
+              const cls      = row.obj
+              const stats    = clusterStats(cls.id)
+              const ls       = launchStatus(parseDate(cls.plannedLaunchDate ?? "01.12.2026"))
+              const panelObj: PanelObject = { kind: "cluster", data: cls }
+              const isSelected = selectedObj?.kind === "cluster" && selectedObj.data.id === cls.id
 
-            return (
-              <div key={`cls-${cls.id}`}>
+              return (
                 <TimelineRow
+                  key={`cls-${cls.id}`}
                   label={cls.clusterName}
                   sublabel={cls.fieldName}
                   typeLabel="Куст"
@@ -755,14 +764,18 @@ export function ProgramGantt() {
                   onClick={() => handleSelect(panelObj)}
                   barColor="#16a34a"
                 />
-                {isSelected && (
-                  <ChecklistGantt obj={panelObj} onClose={() => setSelectedObj(null)} />
-                )}
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
         </div>
       </div>
+
+      {/* ── Checklist panel — renders BELOW the timeline in normal doc flow ── */}
+      {selectedObj && (
+        <div ref={panelRef}>
+          <ChecklistGantt obj={selectedObj} onClose={() => setSelectedObj(null)} />
+        </div>
+      )}
     </div>
   )
 }
