@@ -1,7 +1,7 @@
 "use client"
 
+import React, { useMemo, useState } from "react"
 import { AppShell } from "@/components/app-shell"
-import { StatusBadge } from "@/components/status-badge"
 import {
   hydroDocs,
   waterWells,
@@ -9,7 +9,6 @@ import {
   type HydroDocType,
   type WaterWell,
 } from "@/lib/mock-data"
-import { useMemo, useState } from "react"
 import { AlertTriangle, CheckCircle2, XCircle, FileText, ChevronDown, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -76,9 +75,8 @@ function DocTable({ docs }: { docs: HydroDocument[] }) {
         </thead>
         <tbody className="divide-y divide-border/50">
           {docs.map((doc, idx) => (
-            <>
+            <React.Fragment key={doc.id}>
               <tr
-                key={doc.id}
                 onClick={() => toggle(doc.id)}
                 className={cn(
                   "hover:bg-muted/20 cursor-pointer transition-colors",
@@ -118,13 +116,13 @@ function DocTable({ docs }: { docs: HydroDocument[] }) {
                 <td className="px-3 py-2.5"><StatusPill status={doc.status} /></td>
               </tr>
               {expanded.has(doc.id) && (
-                <tr key={`${doc.id}-exp`} className="bg-muted/20">
+                <tr className="bg-muted/20">
                   <td colSpan={6} className="px-6 py-3 text-xs text-muted-foreground border-t border-border/30">
                     <span className="font-medium text-foreground">Комментарий: </span>{doc.comment || "—"}
                   </td>
                 </tr>
               )}
-            </>
+            </React.Fragment>
           ))}
         </tbody>
       </table>
