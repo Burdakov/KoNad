@@ -194,8 +194,10 @@ function ChecklistGantt({ obj, onClose }: ChecklistGanttProps) {
   }, [ganttStart, ganttDays, launchDate])
 
   // Layout constants
-  const LABEL_COL = 380   // px — label + dept/responsible/dates inline
-  const GANTT_COL = 320   // px — compact gantt
+  // Month col width = text width of "янв. 26 г." (~38px at 7px font) + 10px padding
+  const MONTH_COL = 48     // px per month column (text + 5px padding each side)
+  const LABEL_COL = 480    // px — wider, more informative label column
+  const GANTT_COL = months.length * MONTH_COL  // exact: no wasted space
   const HEADER_H  = 24    // px
 
   // SVG arrow layer: dependency lines
@@ -259,29 +261,28 @@ function ChecklistGantt({ obj, onClose }: ChecklistGanttProps) {
 
           {/* Column headers */}
           <div
-            className="flex sticky top-0 z-20 bg-muted border-b border-border text-[10px] font-semibold text-muted-foreground uppercase tracking-wide"
+            className="flex sticky top-0 z-20 bg-muted border-b border-border"
             style={{ height: HEADER_H }}
           >
-            <div className="flex items-center px-3 border-r border-border flex-shrink-0" style={{ width: LABEL_COL }}>
+            <div
+              className="flex items-center px-3 border-r border-border flex-shrink-0 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide"
+              style={{ width: LABEL_COL }}
+            >
               Требование
             </div>
-            <div className="flex-1 relative" style={{ minWidth: GANTT_COL }}>
-              {/* Month ticks */}
-              {months.map((m) => (
-                <div
-                  key={m.label}
-                  className="absolute top-0 bottom-0 flex items-center pl-0.5 border-l border-border/40"
-                  style={{ left: `${m.offsetPct.toFixed(2)}%`, fontSize: 7, color: "hsl(var(--muted-foreground))" }}
-                >
-                  {m.label}
-                </div>
-              ))}
-              {/* Launch line */}
+            {/* Each month gets its own fixed-width cell */}
+            {months.map((m, mi) => (
               <div
-                className="absolute top-0 bottom-0 w-0.5 bg-red-500/50 z-10"
-                style={{ left: "100%", transform: "translateX(-1px)" }}
-              />
-            </div>
+                key={m.label}
+                className={cn(
+                  "flex items-center justify-center text-muted-foreground border-l border-border/40 flex-shrink-0 select-none",
+                  mi === months.length - 1 && "border-r-2 border-r-red-500/50"
+                )}
+                style={{ width: MONTH_COL, fontSize: 8, lineHeight: 1, padding: "0 5px" }}
+              >
+                {m.label}
+              </div>
+            ))}
           </div>
 
           {/* SVG arrow layer — absolute over the gantt column */}
@@ -323,13 +324,17 @@ function ChecklistGantt({ obj, onClose }: ChecklistGanttProps) {
           {df25ChecklistItems.map((item, idx) => {
             const bar    = bars[idx]
             const status = bar.status
-            const deptColor  = DEPT_COLORS[item.department] ?? "#6b7280"
-            const deptShort  = item.department
+            const deptColor = DEPT_COLORS[item.department] ?? "#6b7280"
+            const deptShort = item.department
               .replace("Управление ", "Упр. ")
               .replace("Блок ", "")
               .replace("Департамент ", "Деп. ")
-            const resp = item.responsible.split(" ")
-            const respShort = `${resp[0]} ${resp[1]?.[0] ?? ""}.`
+
+            const barLeftPx  = Math.max(0, (bar.barStartPct / 100) * GANTT_COL)
+            const barWidthPx = Math.max(2, Math.min(
+              (bar.barWidthPct / 100) * GANTT_COL,
+              GANTT_COL - barLeftPx
+            ))
 
             return (
               <div
@@ -340,9 +345,9 @@ function ChecklistGantt({ obj, onClose }: ChecklistGanttProps) {
                 )}
                 style={{ height: ROW_H }}
               >
-                {/* Label column */}
+                {/* Label column — wider, more informative */}
                 <div
-                  className="flex items-center gap-1.5 px-2 border-r border-border/40 flex-shrink-0 min-w-0"
+                  className="flex items-center gap-2 px-2 border-r border-border/40 flex-shrink-0 min-w-0"
                   style={{ width: LABEL_COL }}
                 >
                   {/* Dept color strip */}
@@ -356,55 +361,59 @@ function ChecklistGantt({ obj, onClose }: ChecklistGanttProps) {
                         : <Clock className="size-3 text-gray-400" />
                     }
                   </div>
-                  {/* Name + meta row */}
-                  <div className="flex-1 min-w-0 flex flex-col justify-center gap-0">
+                  {/* Name + meta — two lines */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-center leading-none gap-0.5">
                     <span className="text-[11px] text-foreground leading-tight truncate" title={item.requirement}>
                       {item.requirement}
                     </span>
-                    {/* Meta: dept · responsible · dates · link — all on one line */}
-                    <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
-                      <span className="text-[8px] font-medium truncate shrink-0 max-w-[100px]" style={{ color: deptColor }}>{deptShort}</span>
-                      <span className="text-[8px] text-muted-foreground/60">·</span>
-                      <span className="text-[8px] text-muted-foreground font-mono shrink-0">{respShort}</span>
-                      <span className="text-[8px] text-muted-foreground/60">·</span>
-                      <span className="text-[8px] text-muted-foreground font-mono shrink-0 whitespace-nowrap">
-                        {fmtDate(bar.startDate).slice(0,5)} – {fmtDate(bar.endDate).slice(0,5)}
+                    <div className="flex items-center gap-2 min-w-0">
+                      {/* Dept */}
+                      <span className="text-[9px] font-medium shrink-0" style={{ color: deptColor }}>
+                        {deptShort}
                       </span>
+                      <span className="text-[9px] text-muted-foreground/50 shrink-0">·</span>
+                      {/* Responsible */}
+                      <span className="text-[9px] text-muted-foreground font-mono shrink-0">
+                        {item.responsible}
+                      </span>
+                      <span className="text-[9px] text-muted-foreground/50 shrink-0">·</span>
+                      {/* Dates */}
+                      <span className="text-[9px] text-muted-foreground font-mono shrink-0 whitespace-nowrap">
+                        {fmtDate(bar.startDate).slice(0, 5)}&nbsp;–&nbsp;{fmtDate(bar.endDate).slice(0, 5)}
+                      </span>
+                      {/* Doc link */}
                       {item.docLink && (
-                        <>
-                          <span className="text-[8px] text-muted-foreground/60">·</span>
-                          <a
-                            href={item.docLink}
-                            onClick={(e) => e.stopPropagation()}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:text-primary/70 shrink-0"
-                            title="Открыть документ"
-                          >
-                            <ExternalLink className="size-2.5" />
-                          </a>
-                        </>
+                        <a
+                          href={item.docLink}
+                          onClick={(e) => e.stopPropagation()}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:text-primary/70 shrink-0"
+                          title="Открыть документ"
+                        >
+                          <ExternalLink className="size-2.5" />
+                        </a>
                       )}
                     </div>
                   </div>
                 </div>
 
-                {/* Gantt bar */}
-                <div className="flex-1 relative" style={{ minWidth: GANTT_COL }}>
-                  {/* Grid lines */}
-                  {months.map((m) => (
+                {/* Gantt area — fixed pixel columns */}
+                <div className="relative flex-shrink-0" style={{ width: GANTT_COL }}>
+                  {/* Month grid lines (pixel-based) */}
+                  {months.map((_, mi) => (
                     <div
-                      key={m.label}
+                      key={mi}
                       className="absolute top-0 bottom-0 w-px bg-border/30"
-                      style={{ left: `${m.offsetPct.toFixed(2)}%` }}
+                      style={{ left: mi * MONTH_COL }}
                     />
                   ))}
                   {/* Bar */}
                   <div
                     className="absolute rounded-sm"
                     style={{
-                      left:       `${Math.max(0, bar.barStartPct).toFixed(2)}%`,
-                      width:      `${Math.max(0.5, Math.min(bar.barWidthPct, 100 - Math.max(0, bar.barStartPct))).toFixed(2)}%`,
+                      left:       barLeftPx,
+                      width:      barWidthPx,
                       top:        "50%",
                       height:     10,
                       transform:  "translateY(-50%)",
@@ -415,8 +424,8 @@ function ChecklistGantt({ obj, onClose }: ChecklistGanttProps) {
                   />
                   {/* Launch line */}
                   <div
-                    className="absolute top-0 bottom-0 w-0.5 bg-red-400/30"
-                    style={{ left: "100%", transform: "translateX(-1px)" }}
+                    className="absolute top-0 bottom-0 w-0.5 bg-red-400/40"
+                    style={{ left: GANTT_COL - 1 }}
                   />
                 </div>
               </div>
